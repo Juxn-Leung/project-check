@@ -25,13 +25,13 @@ npm 包提供显式的 Skill 安装命令，不会在 `npm install` 时通过安
 个人安装：
 
 ```sh
-npx project-check-skill@0.1.0 install --user
+npx project-check-skill@latest install --user
 ```
 
 仅安装到当前项目：
 
 ```sh
-npx project-check-skill@0.1.0 install --project .
+npx project-check-skill@latest install --project .
 ```
 
 可追加 `--dry-run` 预览目标位置。目标已存在时拒绝覆盖，以保留本地修改。安装后仍在 Codex 聊天中使用下方三个入口；此安装器本身不执行业务测试。
@@ -39,7 +39,7 @@ npx project-check-skill@0.1.0 install --project .
 也可把发布后的包固定为开发依赖，再显式执行安装：
 
 ```sh
-npm install --save-dev project-check-skill@0.1.0
+npm install --save-dev --save-exact project-check-skill@latest
 npx project-check install --project .
 ```
 
@@ -114,10 +114,18 @@ git clone --branch master https://github.com/Juxn-Leung/project-check.git "$HOME
 
 ```sh
 python3 -m unittest discover -s tests -v
-node --test tests/installer.test.js
+npm test
 python3 scripts/project_check.py --help
 ```
 
 当前回归测试验证清单和报告工具的行为，不代表已经在任意业务项目上完成端到端验收。
+
+## 点击发布
+
+本仓库已提供 [Publish npm package](https://github.com/Juxn-Leung/project-check/actions/workflows/publish.yml) 工作流。首次发布 npm 包并配置 Trusted Publisher 后，日常只需推送代码，在 GitHub 的 **Run workflow** 中选择 `patch / minor / major` 并运行。
+
+流程自动测试、打包、安装验证、发布到 npm，并同步 `master` 的版本及 Git 标签。无需保存长期 npm token。勾选 `dry_run` 可先预演，预演不会发布或推送。
+
+首次配置的准确字段、认证边界及失败恢复见 [发布指南](docs/publishing.md)。工作流已加入仓库不代表 npm 信任关系已配置或真实发布已验证。
 
 完整工作流见 [SKILL.md](SKILL.md)。

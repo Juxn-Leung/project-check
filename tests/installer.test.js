@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { installSkill } from '../bin/project-check.js';
 
+const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+
 async function temporary(t) {
   const root = await mkdtemp(join(tmpdir(), 'project-check-test-'));
   t.after(() => rm(root, { recursive: true, force: true }));
@@ -73,7 +75,7 @@ test('CLI reports version and rejects invalid options', () => {
   const script = fileURLToPath(new URL('../bin/project-check.js', import.meta.url));
   const result = spawnSync(process.execPath, [script, '--version'], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /project-check-skill@0\.1\.0/);
+  assert.equal(result.stdout.trim(), `${manifest.name}@${manifest.version}`);
   for (const args of [['run'], ['install'], ['install', '--project'], ['install', '--user', '--user']]) {
     const bad = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' });
     assert.equal(bad.status, 1, args.join(' '));
@@ -87,5 +89,5 @@ test('CLI starts through an npm-style executable symlink', async t => {
   await symlink(script, link);
   const result = spawnSync(process.execPath, [link, '--version'], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /project-check-skill@0\.1\.0/);
+  assert.equal(result.stdout.trim(), `${manifest.name}@${manifest.version}`);
 });
