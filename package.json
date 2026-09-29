@@ -1,5 +1,5 @@
 {
-  "name": "project-check",
+  "name": "project-check-skill",
   "version": "0.1.0",
   "description": "Codex skill for evidence-based project acceptance tests, with a local skill installer.",
   "type": "module",

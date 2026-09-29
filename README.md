@@ -20,16 +20,18 @@ Project Check 要求交互场景实际点击入口，检查业务结果，并收
 
 npm 包提供显式的 Skill 安装命令，不会在 `npm install` 时通过安装钩子自动修改用户目录。Node.js 需要 20 或更新版本。
 
-包名及发布状态确认后，个人安装命令为：
+拟发布包名为 `project-check-skill`，Skill 名称仍为 `project-check`。下列注册表安装命令需在首次发布完成后使用；当前可先使用文末的本地安装方式。
+
+个人安装：
 
 ```sh
-npx project-check@0.1.0 install --user
+npx project-check-skill@0.1.0 install --user
 ```
 
 仅安装到当前项目：
 
 ```sh
-npx project-check@0.1.0 install --project .
+npx project-check-skill@0.1.0 install --project .
 ```
 
 可追加 `--dry-run` 预览目标位置。目标已存在时拒绝覆盖，以保留本地修改。安装后仍在 Codex 聊天中使用下方三个入口；此安装器本身不执行业务测试。
@@ -37,7 +39,7 @@ npx project-check@0.1.0 install --project .
 也可把发布后的包固定为开发依赖，再显式执行安装：
 
 ```sh
-npm install --save-dev project-check@0.1.0
+npm install --save-dev project-check-skill@0.1.0
 npx project-check install --project .
 ```
 
