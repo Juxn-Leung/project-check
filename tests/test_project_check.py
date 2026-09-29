@@ -40,8 +40,8 @@ class ReportGateTests(unittest.TestCase):
     def summarize(self, module=None):
         return pc.summarize(self.inventory, self.payload, self.base, module)
 
-    def test_complete_observed_run_passes(self):
-        self.assertEqual(self.summarize()["outcome"], "PASSED")
+    def test_legacy_run_is_not_complete(self):
+        self.assertEqual(self.summarize()["outcome"], "INCOMPLETE")
 
     def test_missing_scenario_result_is_blocked(self):
         self.payload["results"] = []
@@ -102,7 +102,7 @@ class ReportGateTests(unittest.TestCase):
         self.inventory["modules"].append({"id": "files", "name": "文件", "regression_dependencies": []})
         self.assertEqual(self.summarize()["outcome"], "INCOMPLETE")
         self.payload["run"]["scope"] = "module:customers"
-        self.assertEqual(self.summarize("customers")["outcome"], "PASSED")
+        self.assertEqual(self.summarize("customers")["outcome"], "INCOMPLETE")
 
     def test_service_cycle_and_unknown_runner_are_rejected(self):
         project = {"version": 1, "name": "fixture", "required_env": [], "data_setup": [], "data_cleanup": [],
@@ -184,7 +184,7 @@ class ReportGateTests(unittest.TestCase):
         results.write_text(json.dumps(self.payload))
         args = [sys.executable, str(SCRIPT), "report", "--root", str(self.base), "--inventory", str(inventory), "--results", str(results)]
         first = subprocess.run(args + ["--out", str(out)], capture_output=True, text=True)
-        self.assertEqual(first.returncode, 0, first.stderr)
+        self.assertEqual(first.returncode, 1, first.stderr)
         content = out.read_text()
         second = subprocess.run(args + ["--out", str(out)], capture_output=True, text=True)
         self.assertEqual(second.returncode, 2)

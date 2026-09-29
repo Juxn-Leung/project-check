@@ -21,6 +21,8 @@ test('project installation includes usable Skill resources without business conf
   assert.equal(result.destination, join(root, '.agents', 'skills', 'project-check'));
   assert.match(await readFile(join(result.destination, 'SKILL.md'), 'utf8'), /name: project-check/);
   assert.match(await readFile(join(result.destination, 'scripts/project_check.py'), 'utf8'), /def summarize/);
+  assert.match(await readFile(join(result.destination, 'scripts/report_adapters.py'), 'utf8'), /def adapt_report/);
+  assert.match(await readFile(join(result.destination, 'assets/playwright/phase-errors.ts'), 'utf8'), /phase\.run|base\.extend/);
   assert.ok(JSON.parse(await readFile(join(result.destination, 'assets/project.template.json'), 'utf8')));
   assert.deepEqual(await readdir(root), ['.agents']);
   assert.ok(!(await readdir(result.destination)).includes('tests'));

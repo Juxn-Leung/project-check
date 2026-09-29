@@ -8,7 +8,7 @@
 
 模块：追加 `--module <id或唯一名称>`。脚本选择该模块及递归声明的 `regression_dependencies`；这是需要关联回归的模块，不等于所有基础设施依赖。准备服务依赖时仍以运行所需为准。未知模块直接报错，不能退化为零测试或全量。
 
-创建唯一 `.project-check/runs/<run-id>/`，保存本次 inventory/config 快照与选定 ID。记录开始/结束 UTC 时间、Git commit（无 Git 则注明）、工作区变动摘要/补丁指纹、分支、测试工具版本、浏览器/视口、服务版本和真实/模拟依赖。报告使用开始时的清单快照，避免运行期间改动清单污染范围。
+在测试开始前运行 `snapshot --root <project> --run-dir <run-dir>`，创建唯一 `.project-check/runs/<run-id>/` 并保存 inventory/config 及需求来源审阅快照。核对 `validate` 输出的需求缺口和来源变化。记录开始/结束 UTC 时间、Git commit（无 Git 则注明）、工作区变动摘要/补丁指纹、分支、测试工具版本、浏览器/视口、服务版本和真实/模拟依赖。报告使用开始时的清单快照，避免运行期间改动清单污染范围。
 
 ## 准备环境
 
@@ -28,19 +28,19 @@
 
 浏览器要求见 `browser.md`。真实联调必须连接本次确认的后端，记录模拟依赖；只用了 mock 的结果不能使真实 e2e 场景通过。
 
-原生 runner 不提供结构化报告时优先启用它已有 reporter；否则保留日志并编写小型项目适配器。禁止用未经执行的 agent 推测填充通过结果。
+pytest 使用 JUnit XML，Playwright 使用 JSON reporter，并在每个 runner 结束后立即调用内置 `adapt` 冻结原生报告、trace、截图及哈希，然后才能开始会复用输出路径的下一轮测试。其它 runner 优先启用已有结构化 reporter，确实不支持时再写项目适配器。禁止用未经执行的 agent 推测填充通过结果。
 
 重试成功保留先前失败和次数，标记 `flaky: true`，汇总仍失败。只有解释原因并在新的独立运行中稳定验证后，才能给出新结果，旧报告不覆盖。
 
 ## 报告
 
-将原生报告转换为 `results.json`（结构见 contracts.md），保存原生报告、日志、失败截图/trace 和本次清单快照。运行：
+根据适配器观察结果和审阅过的业务断言填写 `results.json` v2（结构见 contracts.md）。原生用例状态、重试和浏览器事件检查从冻结的观察结果读取，不手填替代。运行：
 
 ```sh
 python3 <skill-dir>/scripts/project_check.py report --root <project> --results <run-dir>/results.json --inventory <run-dir>/inventory.json --out <run-dir>/REPORT.md
 ```
 
-模块运行追加与选择时一致的 `--module <id>`。汇总器不会运行测试，也不会验证证据内容的真实性；它检查结构、范围、缺失、证据文件是否存在和结果一致性。agent 必须审阅原生报告与清单映射。CI 接入时由实际运行器/适配器生成结果，不能把手写 JSON 当作可信门禁。
+模块运行追加与选择时一致的 `--module <id>`。汇总器不会运行测试；它检查结构、范围、需求映射、来源审阅、原生观察结果和冻结证据哈希。agent 仍须审阅测试断言及其业务含义。CI 接入时由实际运行器/适配器生成结果，不能把手写 JSON 当作可信门禁。
 
 退出码 0 表示所选清单通过且无已知覆盖/预期缺口；1 表示失败、阻塞、跳过或覆盖不完整；2 表示输入/配置错误。即使失败也生成报告。空清单不通过。构建测试设施期间预期的非零退出码不要误当脚本崩溃。
 

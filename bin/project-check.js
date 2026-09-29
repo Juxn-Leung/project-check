@@ -8,8 +8,10 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const payload = [
   'SKILL.md', 'agents/openai.yaml',
   'assets/inventory.template.json', 'assets/project.template.json',
+  'assets/playwright/phase-errors.ts', 'assets/playwright/phase-rule-engine.mjs',
+  'assets/playwright/phase-rule-engine.d.mts',
   'references/build.md', 'references/run.md', 'references/browser.md', 'references/contracts.md',
-  'scripts/project_check.py',
+  'scripts/project_check.py', 'scripts/report_adapters.py',
 ];
 
 const help = `Project Check — Codex Skill installer

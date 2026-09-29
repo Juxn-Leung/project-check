@@ -10,7 +10,26 @@
 
 测试结束时对未解释错误进行断言，不能只 attach 日志却让测试保持绿色。即使用例中途失败，也保存已捕获错误和附件。避免循环监听、重复计数；新页面的监听在触发打开之前安装。
 
-明确接口失败的影响：关键业务请求失败令关联场景失败；无关第三方噪声需给出依据再排除。预期 401、校验错误或中止请求以场景、来源、类型、匹配条件及原因定义，避免宽泛忽略所有 error/4xx。预期异常还应断言正确的 UI 反馈。异常白名单变更应审阅，不为当前失败临时扩大。
+明确接口失败的影响：关键业务请求失败令关联场景失败；无关第三方噪声需给出依据再排除。复制 `assets/playwright/phase-errors.ts`、`phase-rule-engine.mjs` 和声明文件到项目测试目录，从该 fixture 导入 `test`。通过 `phase.run(阶段名, 规则, 操作, 状态断言)` 显式划定操作与异步结果窗口；规则必须写事件类型、方法、URL 正则、精确状态或失败原因、匹配理由及允许次数。窗口外或未匹配的错误仍失败，且 fixture 会在失败时附上完整事件记录。
+
+登出可分别声明：`POST /logout` 的 `response 204` 为必需成功响应（`min: 1`）；登出期间受保护资料请求的 `response 401` 可以允许（`min: 0`）；导航取消的指定请求 `requestfailed` 与精确 `errorText` 可以允许。状态断言需确认已退出登录和会话失效。其它 401、取消请求或错误响应不能被这组规则忽略。若请求可能晚于状态断言完成，先用条件等待覆盖其最终事件，再结束阶段。规则变化应审阅，不为当前失败临时扩大。
+
+```ts
+import { test, expect } from './phase-errors';
+
+test('AUTH-LOGOUT-001', async ({ page, phase }) => {
+  await phase.run('logout', [
+    { kind: 'response', method: 'POST', urlPattern: '/logout$', status: 204,
+      reason: 'logout endpoint completed', min: 1, max: 1 },
+    { kind: 'response', method: 'GET', urlPattern: '/profile$', status: 401,
+      reason: 'protected request after logout', min: 0 },
+    { kind: 'requestfailed', method: 'GET', urlPattern: '/feed$', errorText: 'net::ERR_ABORTED',
+      reason: 'navigation canceled old feed', min: 0 },
+  ],
+  async () => { await page.getByRole('button', { name: '退出登录' }).click(); },
+  async () => { await expect(page.getByRole('link', { name: '登录' })).toBeVisible(); });
+});
+```
 
 ## 操作与断言
 
@@ -25,6 +44,6 @@
 
 原生 runner 报告应能核对场景 ID、执行的用例、失败信息和断言。为 `browser/e2e/visual` 保存 trace 或等价的操作与断言记录，提供失败截图；敏感信息使用测试数据并在分享前脱敏。
 
-`results.json` 中的 `interaction_evidence` 指向上述记录，`runtime_errors_checked: true` 表示共享 fixture 实际覆盖了本次执行并断言。字段本身不是证明；必须核对原生附件，不能只填写 true。
+Playwright 适配器会冻结 `project-check-browser-events` 附件，并据此设置 `runtime_errors_checked`、未解释事件和交互证据。v2 `results.json` 中不能手填 `runtime_errors_checked: true` 冒充 fixture。成功场景仍需 trace 或等价的操作与断言步骤证据；缺少事件记录或交互证据会阻塞通过。
 
 视觉测试固定浏览器、操作系统、视口、字体和动态数据策略。使用已有认可基准，意外差异保持失败；不在执行入口自动更新快照。像素一致只说明与基准接近，不证明设计质量。

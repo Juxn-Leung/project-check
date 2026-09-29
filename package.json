@@ -11,8 +11,10 @@
     "SKILL.md",
     "agents/openai.yaml",
     "assets/*.json",
+    "assets/playwright/*",
     "references/*.md",
-    "scripts/project_check.py"
+    "scripts/project_check.py",
+    "scripts/report_adapters.py"
   ],
   "engines": {
     "node": ">=20"
