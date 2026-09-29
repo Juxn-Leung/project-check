@@ -1,0 +1,38 @@
+{
+  "name": "project-check",
+  "version": "0.1.0",
+  "description": "Codex skill for evidence-based project acceptance tests, with a local skill installer.",
+  "type": "module",
+  "bin": {
+    "project-check": "bin/project-check.js"
+  },
+  "files": [
+    "bin/project-check.js",
+    "SKILL.md",
+    "agents/openai.yaml",
+    "assets/*.json",
+    "references/*.md",
+    "scripts/project_check.py"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test tests/installer.test.js",
+    "test:python": "python3 -m unittest discover -s tests -v",
+    "prepublishOnly": "npm test && npm run test:python"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Juxn-Leung/project-check.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Juxn-Leung/project-check/issues"
+  },
+  "homepage": "https://github.com/Juxn-Leung/project-check#readme",
+  "keywords": ["codex", "skill", "testing", "acceptance-testing", "frontend"],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

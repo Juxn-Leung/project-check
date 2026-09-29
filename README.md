@@ -16,6 +16,35 @@ Project Check 要求交互场景实际点击入口，检查业务结果，并收
 
 这是 Codex Skill，不是 VS Code 扩展。可在 Codex 中使用，也可由 VS Code 中的 Codex 扩展调用。
 
+### npm 分发（发布准备中）
+
+npm 包提供显式的 Skill 安装命令，不会在 `npm install` 时通过安装钩子自动修改用户目录。Node.js 需要 20 或更新版本。
+
+包名及发布状态确认后，个人安装命令为：
+
+```sh
+npx project-check@0.1.0 install --user
+```
+
+仅安装到当前项目：
+
+```sh
+npx project-check@0.1.0 install --project .
+```
+
+可追加 `--dry-run` 预览目标位置。目标已存在时拒绝覆盖，以保留本地修改。安装后仍在 Codex 聊天中使用下方三个入口；此安装器本身不执行业务测试。
+
+也可把发布后的包固定为开发依赖，再显式执行安装：
+
+```sh
+npm install --save-dev project-check@0.1.0
+npx project-check install --project .
+```
+
+仅执行 `npm install` 会将包放进 `node_modules`，还需要第二步才能把 Skill 放到 Codex 可发现的位置。首次发布前可从本地仓库执行 `node bin/project-check.js install --project <目标项目目录>`。
+
+### 从 GitHub 安装
+
 个人安装后可供多个项目使用。首次安装，确认目标目录尚不存在，然后执行：
 
 ```sh
@@ -83,6 +112,7 @@ git clone --branch master https://github.com/Juxn-Leung/project-check.git "$HOME
 
 ```sh
 python3 -m unittest discover -s tests -v
+node --test tests/installer.test.js
 python3 scripts/project_check.py --help
 ```
 
