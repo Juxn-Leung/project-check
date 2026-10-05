@@ -8,7 +8,7 @@
 
 模块：追加 `--module <id或唯一名称>`。脚本选择该模块及递归声明的 `regression_dependencies`；这是需要关联回归的模块，不等于所有基础设施依赖。准备服务依赖时仍以运行所需为准。未知模块直接报错，不能退化为零测试或全量。
 
-在测试开始前运行 `snapshot --root <project> --run-dir <run-dir>`，创建唯一 `.project-check/runs/<run-id>/` 并保存 inventory/config 及需求来源审阅快照。核对 `validate` 输出的需求缺口和来源变化。记录开始/结束 UTC 时间、Git commit（无 Git 则注明）、工作区变动摘要/补丁指纹、分支、测试工具版本、浏览器/视口、服务版本和真实/模拟依赖。报告使用开始时的清单快照，避免运行期间改动清单污染范围。
+在测试开始前运行 `snapshot --root <project> --run-dir <run-dir>`，创建唯一 `.project-check/runs/<run-id>/` 并保存 inventory/config、需求来源审阅及自动采集的源码指纹 workspace.json。核对 `validate` 输出的需求缺口和来源变化。记录开始/结束 UTC 时间、Git commit（无 Git 则注明）、工作区变动摘要/补丁指纹、分支、测试工具版本、浏览器/视口、服务版本和真实/模拟依赖。报告使用开始时的清单快照，避免运行期间改动清单污染范围。
 
 ## 准备环境
 
@@ -34,7 +34,7 @@ pytest 使用 JUnit XML，Playwright 使用 JSON reporter，并在每个 runner 
 
 ## 报告
 
-根据适配器观察结果和审阅过的业务断言填写 `results.json` v2（结构见 contracts.md）。原生用例状态、重试和浏览器事件检查从冻结的观察结果读取，不手填替代。运行：
+先从本次 workspace.json 读取实际 revision；不要手写猜测当前提交。根据适配器观察结果和审阅过的业务断言填写 `results.json` v2（结构见 contracts.md）。原生用例状态、重试和浏览器事件检查从冻结的观察结果读取，不手填替代。运行：
 
 ```sh
 python3 <skill-dir>/scripts/project_check.py report --root <project> --results <run-dir>/results.json --inventory <run-dir>/inventory.json --out <run-dir>/REPORT.md
@@ -48,4 +48,10 @@ python3 <skill-dir>/scripts/project_check.py report --root <project> --results <
 
 ## 可选修复
 
-仅在用户要求时修改产品代码。保留旧 run，复现后修复，再建立新 run；报告列出前后结果与代码差异。默认最多三轮。有需求歧义、权限/外部阻塞或需要改变验收标准时，报告具体问题，不盲目重试。
+当用户当前任务已要求实现或修复时，可以在已授权范围内修改产品代码；仅测试请求保持只报告。保留旧 run，复现后修复，再建立新 run；报告列出前后结果与代码差异。默认最多三轮。有需求歧义、权限/外部阻塞或需要改变验收标准时，报告具体问题，不盲目重试。
+
+## 更新视图与收尾
+
+报告生成后运行 `freshness --root <project> --run-dir <run-dir>`。不匹配时旧报告保留，但不用于当前完成判断；修复后新建 run。`seal` 验证通过的完整结果并核对源码，保存收尾证据。需要 OpenSpec 归档时继续按 openspec.md 的 `finish` 执行；仅测试请求不隐含归档授权。
+
+使用 `map --root <project> --run-dir <run-dir>` 将实际证据连接到功能视图；`review --change-id <id>` 与任务开始时 baseline 对比，解释相关源码及关联影响。需求/模型补充放在下一次 snapshot 之前，不在测试后改变验收输入再沿用旧结果。

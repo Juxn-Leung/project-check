@@ -10,8 +10,11 @@ const payload = [
   'assets/inventory.template.json', 'assets/project.template.json',
   'assets/playwright/phase-errors.ts', 'assets/playwright/phase-rule-engine.mjs',
   'assets/playwright/phase-rule-engine.d.mts',
+  'assets/playwright/project-check-reporter.ts', 'assets/project-map.html', 'assets/model.template.json',
   'references/build.md', 'references/run.md', 'references/browser.md', 'references/contracts.md',
-  'scripts/project_check.py', 'scripts/report_adapters.py',
+  'references/map.md', 'references/openspec.md',
+  'scripts/project_check.py', 'scripts/report_adapters.py', 'scripts/acceptance.py',
+  'scripts/workspace_state.py', 'scripts/project_model.py', 'scripts/completion.py',
 ];
 
 const help = `Project Check — Codex Skill installer

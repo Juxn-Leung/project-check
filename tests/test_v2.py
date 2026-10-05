@@ -42,7 +42,9 @@ class V2GateTests(unittest.TestCase):
                            "state": "active", "basis": {"status": "confirmed", "source": "approved brief"},
                            "requirement_ids": ["REQ-1"], "preconditions": [], "actions": ["点击创建"],
                            "expected": ["记录存在"], "coverage": "implemented", "runner": "browser",
-                           "tests": ["suite::create"], "dependency_mode": "real"}],
+                           "tests": ["suite::create"], "dependency_mode": "real",
+                           "checks": [{"id": "create", "kind": "click", "description": "点击创建"},
+                                      {"id": "persist", "kind": "assert", "description": "记录存在"}]}],
         }
         self.payload = {"version": 2, "run": {"id": "run-1", "started_at": "2026-09-29T10:00:00Z",
                         "finished_at": "2026-09-29T10:01:00Z", "revision": "fixture", "workspace": "clean",
@@ -55,7 +57,9 @@ class V2GateTests(unittest.TestCase):
                                      "unexpected_errors": [], "evidence": [], "interaction_evidence": []}]}
         self.observation = {"version": 1, "cases": [{"id": "suite::create", "status": "passed", "flaky": False,
                             "evidence": ["native.xml"], "interaction_evidence": ["actions.txt"],
-                            "runtime_errors_checked": True, "unexpected_errors": [], "issues": []}]}
+                            "runtime_errors_checked": True, "unexpected_errors": [], "issues": [],
+                            "checks": [{"id": "create", "kind": "click", "verified": True},
+                                       {"id": "persist", "kind": "assert", "verified": True}]}]}
         self.write_evidence()
 
     def write_evidence(self):

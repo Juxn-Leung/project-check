@@ -85,8 +85,9 @@ def _playwright_cases(native):
                 final = results[-1].get("status") if results else None
                 status = {"passed": "passed", "failed": "failed", "timedOut": "failed",
                           "skipped": "skipped", "interrupted": "blocked"}.get(final, "blocked")
-                if test.get("expectedStatus") == "failed" and test.get("status") == "expected" and final == "failed":
-                    status = "passed"
+                # A known/expected failing test is not a working product capability.
+                if test.get("expectedStatus") == "failed":
+                    status = "failed"
                 if test.get("status") == "unexpected":
                     status = "failed"
                 flaky = len(results) > 1 or test.get("status") == "flaky" or any(
@@ -140,7 +141,7 @@ def adapt_report(framework, native, artifact_root, run_dir, runner):
     for case in parsed:
         row = {"id": case["id"], "status": case["status"], "flaky": case["flaky"],
                "evidence": [native_rel], "interaction_evidence": [], "runtime_errors_checked": False,
-               "unexpected_errors": [], "issues": []}
+               "unexpected_errors": [], "issues": [], "checks": []}
         if framework == "playwright-json":
             for attachment in case["attachments"]:
                 if not isinstance(attachment, dict):
@@ -192,6 +193,16 @@ def adapt_report(framework, native, artifact_root, run_dir, runner):
                         row["unexpected_errors"].extend(str(value) for value in event_log["unexpected"])
                     except (ValueError, UnicodeError, TypeError) as error:
                         row["issues"].append(f"浏览器事件记录无效：{error}")
+                if name == "project-check-steps":
+                    try:
+                        log = json.loads(destination.read_text(encoding="utf-8"))
+                        if not isinstance(log, dict) or log.get("version") != 1 or not isinstance(log.get("checks"), list):
+                            raise ValueError("invalid step log")
+                        from acceptance import observed_checks
+                        row["checks"].extend(observed_checks(log["checks"]))
+                        row["interaction_evidence"].append(rel)
+                    except (ValueError, UnicodeError, TypeError) as error:
+                        row["issues"].append(f"验收动作记录无效：{error}")
             steps = [result.get("steps", []) for result in case["results"]]
             if any(steps):
                 serial += 1
