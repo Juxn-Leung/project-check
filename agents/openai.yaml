@@ -1,4 +1,4 @@
 interface:
   display_name: "Project Check · 项目理解与验收"
-  short_description: "用关系图、功能表和字段表解释方法用途，追踪修改前后的代码与影响"
-  default_prompt: "使用 $project-check 分析当前项目，生成关系图、功能表和字段表；重点讲解本次修改的方法、前后行为及关联影响。"
+  short_description: "看懂 AI 的代码改动，用绑定版本的执行证据验收本次任务"
+  default_prompt: "使用 $project-check 处理本次任务：修改开始前记录基线，完成后讲清楚改了什么、影响哪里，并验收本次功能与关联回归；先给聊天摘要，再提供本地详情页。"

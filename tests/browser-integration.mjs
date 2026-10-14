@@ -103,9 +103,9 @@ if (mapOnly) {
   const blocked = browserEnvironmentBlock(report);
   if (blocked) await recordBlock(blocked);
   else {
-    if (code !== 0 || report.stats?.expected !== 5 || report.stats?.unexpected !== 0) throw new Error('Map interaction regression failed; inspect playwright.json');
-    await writeFile(resolve(output, 'integration-summary.json'), JSON.stringify({ outcome: 'PASSED', scope: 'map UI regression only', cases_executed: 5 }, null, 2) + '\n');
-    console.log('Map UI: 5 interaction regressions passed');
+    if (code !== 0 || report.stats?.expected !== 9 || report.stats?.unexpected !== 0) throw new Error('Map interaction regression failed; inspect playwright.json');
+    await writeFile(resolve(output, 'integration-summary.json'), JSON.stringify({ outcome: 'PASSED', scope: 'task and map UI regression only', cases_executed: 9 }, null, 2) + '\n');
+    console.log('Task and map UI: 9 interaction regressions passed');
   }
 } else if (reporterOnly) {
   const code = await run(process.execPath, testArgs, { ...browserEnv, PROJECT_CHECK_REPORTER_ONLY: '1' }, 'playwright.log');

@@ -1,11 +1,13 @@
 ---
 name: project-check
-description: Understand projects through connected feature/method graphs and field tables; explain method-level changes; build and run evidence-based acceptance tests; finish verified OpenSpec changes. Use for 项目全貌、代码关联、改动讲解、建立测试、模块验收 or 验收并归档. Test-only requests do not authorize product edits.
+description: Help users understand AI code changes and accept them with version-bound execution evidence. Start from a task, capture its baseline, explain before/after behavior, run required scenarios and regressions, and deliver a short summary with a local detail page. Also supports 项目全貌、代码关联、建立测试、模块验收 and OpenSpec 收尾. Test-only requests do not authorize product edits.
 ---
 
 # Project Check · 项目理解与验收
 
-以功能关系图、功能表和字段表理解项目，重点支持修改过程：定位真实方法，说明其用途、输入输出和调用关系，对照修改前后源码并追踪影响。支持 Web 项目及其后端，也适用于 CLI 等没有产品页面的项目。沿用项目已有框架。安装 skill 不会自动监听每次代码编辑。
+让使用者看懂 AI 的代码改动，并用绑定版本的执行证据完成验收。默认从本次任务开始，只接入相关功能，逐次积累项目资料。先在聊天讲清楚改了什么、影响哪里、验收结果，再提供本地详情页；关系图、功能表和字段表用于按需深入查看。支持 Web、后端与 CLI 项目，沿用已有框架。安装 skill 不会自动监听每次代码编辑。
+
+日常只需一句话：**“使用 $project-check，帮我修改这个功能，完成后讲清楚改了什么，并验收。”** 用户不需要填写 JSON、执行辅助命令或先建立完整项目地图。
 
 ## 入口与工作范围
 
@@ -13,6 +15,7 @@ description: Understand projects through connected feature/method graphs and fie
 
 | 入口 | 用户示例 | 结果 |
 | --- | --- | --- |
+| 默认任务 | 修改这个功能，完成后讲解并验收 | 自动记录基线、补必要测试、执行任务及关联回归、聊天摘要与本次任务详情页 |
 | `map` | 看懂这个项目 / 解释订单功能 | 功能关系图、方法用途、功能表、字段表与验证情况 |
 | `build` | 建立或更新测试 | 复用需求、维护场景、补齐测试并试跑 |
 | `run` / `module <名称>` | 验收项目 / 验收用户管理 | 真实执行、错误检查与冻结证据 |
@@ -32,12 +35,14 @@ description: Understand projects through connected feature/method graphs and fie
 
 ## 一次改动的工作方式
 
-1. 读取已有需求与用户当前目标。发现 OpenSpec 时复用已确认规格和场景，保留来源，不再创建一份需人工维护的相同需求。明确需求优先于从代码推断的行为；Codex 可以核对已确认需求，无需用户逐条重复确认。
-2. 修改前先说明本次目标，定位入口方法、相关字段与预计影响；复用 OpenSpec 或当前任务描述，不增加重复审批。补齐方法的真实名称、职责、输入输出、关键步骤及准确源码范围，再用 `baseline` 保存工作区和关联模型。已有未提交修改属于基线。若修改已开始，明确无法还原完整起点。
-3. 实现与验收围绕具体业务场景。重要页面操作实际点击；刷新/重新查询核对持久化，按影响范围选择关联回归。默认不增加第二套测试框架。
-4. 测试开始前 `snapshot` 冻结需求、配置与源码身份。每个 runner 结束后立即 `adapt` 冻结原生报告/附件；生成报告后 `seal` 核对源码未变且验收通过。源码、测试或需求发生变化时重新运行受影响范围；旧结果只作为历史。
-5. `review` 更新“本次修改”视图。优先展示改动方法和影响连线，点击方法能看修改前后代码、原来的用途、现在的行为、修改原因和验证结果。准确区分源码实际修改、调用影响、关联数据可能受影响及无法定位；同文件变化不等于全部方法变化。通过功能表和字段表交叉定位，保留未映射改动并解释与目标的偏差。
+1. 读取已有需求与用户当前目标。首次只识别本次涉及的服务、功能、入口与测试；初始化缺失配置后补齐必要资料，不把空模板当成接入完成。整理目标和可观察验收标准；只有影响实现的歧义才提问。发现 OpenSpec 时复用已确认规格和场景，保留来源，不再创建相同需求。明确需求优先于从代码推断的行为，无需用户逐条重复确认。
+2. 修改前先说明本次目标，定位入口方法、相关字段与预计影响；复用 OpenSpec 或当前任务描述，不增加重复审批。在 inventory v2 的可选 `tasks` 中登记任务 `id`、`goal`、`requirement_ids` 和 `regression_scenario_ids`，ID 与 `baseline/review --change-id` 共用。补齐方法的真实名称、职责、输入输出、关键步骤及准确源码范围，再用 `baseline` 保存工作区和关联模型。已有未提交修改属于基线。若修改已开始，明确无法还原完整起点。
+3. 任务需求的全部活动场景自动纳入，额外回归场景与模块回归依赖按实际影响维护。用 `select --task <id>` 核对范围，再按本次目标实现。没有任务记录的独立分析或全量/模块验收继续沿用原入口。
+4. 复用已有测试；缺少本次关键测试时自动补齐，常规 Web 项目没有浏览器框架时按需接入 Playwright。重要页面操作实际点击，保存后刷新/重新查询核对持久化。模型、需求和测试准备完成后用 `preflight --task <id>` 检查环境，再 `snapshot`；每个 runner 结束立即 `adapt`，再 `report/seal --task <id>`。本次改动造成的缺陷在授权范围内修复并新建运行重跑，最多三轮；其他问题保留原因和影响，不借机扩大产品修改范围。
+5. `review --change-id <id> --run-dir <run-dir>` 默认生成“本次任务”首页。每个改动方法回答“原来做什么、现在做什么、为什么修改”，修改原因使用 `rationale` 讲解记录；行为解释与实际源码差异、原生执行证据分开。准确区分真实修改、可能影响和无法定位，保留未映射改动。源码、测试或验收输入继续变化时重新验收；旧结果保留为历史。
 6. 归档使用 `finish`。事先约定自动归档且验证满足条件时不重复询问；明确要求的人工签收仍须有真实确认。仅“用户尚未看讲解”不阻塞归档。
+
+GitNexus、已有浏览器工具及 OpenSpec 按需复用；缺少这些工具不阻止基本任务流程。外部图谱用于辅助定位，不能代替真实验收证据。服务启动与测试执行仍由 Codex 使用项目工具编排。
 
 ## 必须保留的判断边界
 
@@ -54,4 +59,6 @@ description: Understand projects through connected feature/method graphs and fie
 
 项目内 `.project-check/inventory.json` 保存需求到场景的关联，`model.json` 保存功能到代码/数据的关联；需求正文继续来自 OpenSpec 或原文档。HTML、清单、报告均为生成视图。测试代码留在项目已有目录，运行历史不可覆盖。
 
-结束时提供可点击项目视图、实际修改/影响说明、测试版本与范围、失败和覆盖缺口、归档结果。说明未执行的验证。需要强制合并检查时由 CI 调用相同工具；skill 本身不保证模型每次都会遵循所有步骤。
+结束时先在聊天给出三项简短摘要：**改了什么**（原来/现在/原因）、**影响哪里**（相关功能、数据与待确认项）、**验收结果**（实际操作、关联回归、未验证范围与版本）。结论使用“已通过 / 未通过 / 待验收”，阻塞、跳过、缺证据和过期结果归为待验收，并说明具体原因。附可点击本地详情页，按需展开方法、关系图与证据；不自动打开页面。
+
+任务通过仅代表任务范围，功能/模块仍按各自完整范围判断。需要强制合并检查时由 CI 调用相同工具；skill 本身不保证模型每次都会遵循所有步骤。

@@ -606,10 +606,12 @@ def acceptance(root, inventory, run_dir):
     payload = read_json(run_dir / 'results.json')
     scope = payload.get('run', {}).get('scope', 'all')
     module = scope[len('module:'):] if scope.startswith('module:') else None
-    summary = summarize(frozen, payload, run_dir, module)
+    task = scope[len('task:'):] if scope.startswith('task:') else None
+    summary = summarize(frozen, payload, run_dir, module, task)
     entries, problems = verified_manifest(payload.get('run', {}).get('snapshot_manifest'), run_dir)
     workspace_verified = payload.get('version') == 2 and not problems and artifact_ok('workspace.json', run_dir, entries)
-    current = workspace_state.current(read_json(run_dir / 'workspace.json'), root) if workspace_verified else None
+    frozen_workspace = read_json(run_dir / 'workspace.json') if workspace_verified else None
+    current = workspace_state.current(frozen_workspace, root) if frozen_workspace else None
     same_inventory = frozen == inventory
     fresh = current is not None and current['current'] and same_inventory
     rows = copy.deepcopy(summary['results'])
@@ -619,11 +621,35 @@ def acceptance(root, inventory, run_dir):
             row['status'] = 'stale'
         row['evidence'] = [str((run_dir / p).relative_to(root)) for p in row['evidence'] if safe_file(run_dir, p).is_file()]
     return {'state': 'current' if fresh else 'stale', 'outcome': summary['outcome'], 'run_id': summary['run']['id'],
+            'scope': scope, 'task': summary.get('task'), 'requirements': summary.get('requirements', []),
+            'runners': summary.get('runners', []),
+            'evidence_valid': summary.get('evidence_valid', False), 'run': summary['run'],
+            'source_revision': frozen_workspace.get('revision') if frozen_workspace else None,
             'run_path': str(run_dir.relative_to(root)), 'results': rows, 'gaps': summary['gaps'],
             'message': '验收证据对应当前代码与清单。' if fresh else '验收仅适用于历史快照；当前源码或清单已变化，或缺少源码快照。',
             'workspace': current, 'workspace_verified': bool(workspace_verified), 'inventory_current': same_inventory,
             'snapshot_problems': problems + ([] if workspace_verified else ['workspace.json 未包含在有效的冻结快照清单中。']),
             'module_outcomes': {row['id']: row['outcome'] for row in summary['modules']}}
+
+
+def scope_readiness(scenarios, evidence):
+    """Check business basis and runner health for the actual displayed scope."""
+    gaps = []
+    for scenario in scenarios:
+        if scenario.get('coverage') != 'implemented':
+            gaps.append(scenario['id'] + '：测试尚未实现。')
+        if scenario.get('basis', {}).get('status') != 'confirmed':
+            gaps.append(scenario['id'] + '：预期依据尚未确认。')
+        if not scenario.get('requirement_ids'):
+            gaps.append(scenario['id'] + '：场景尚未关联需求。')
+    runners = {s.get('runner') for s in scenarios}
+    tests = {test for scenario in scenarios for test in scenario.get('tests', [])}
+    relevant = [r for r in evidence.get('runners', []) if r['id'] in runners or
+                tests.intersection(r.get('test_ids', [])) or not r.get('test_ids')]
+    for runner in relevant:
+        if runner['status'] != 'passed':
+            gaps.append('运行器' + runner['id'] + '：' + '；'.join(runner.get('errors', [])) + '（' + runner['status'] + '）')
+    return gaps, any(r['status'] == 'failed' for r in relevant)
 
 
 def feature_acceptance(feature, inventory, evidence):
@@ -633,12 +659,78 @@ def feature_acceptance(feature, inventory, evidence):
     omitted = sorted(required - expected)
     rows = {r['id']: r for r in evidence['results']}
     statuses = [rows.get(key, {}).get('status', 'not-run') for key in expected]
-    state = ('failed' if 'failed' in statuses else 'stale' if 'stale' in statuses else
+    coverage = {r['id']: r for r in evidence.get('requirements', [])}
+    scoped_gaps, runner_failed = scope_readiness(
+        [s for s in inventory['scenarios'] if s['id'] in expected], evidence
+    ) if evidence.get('scope', '').startswith('task:') else ([], False)
+    complete = (evidence.get('evidence_valid') is True and requirements <= coverage.keys() and
+                not scoped_gaps and
+                all(coverage[key]['source_reviewed'] and coverage[key]['scenarios'] and
+                    all(rows.get(id, {}).get('status') == 'passed' for id in coverage[key]['scenarios'])
+                    for key in requirements)) if evidence.get('scope', '').startswith('task:') else (
+                evidence.get('module_outcomes', {}).get(feature['module'], evidence.get('outcome')) == 'PASSED')
+    state = ('failed' if 'failed' in statuses or runner_failed and evidence.get('state') == 'current' else 'stale' if 'stale' in statuses else
              'passed' if expected and requirements and not omitted and all(x == 'passed' for x in statuses) and
              evidence.get('state') == 'current' and
-             evidence.get('module_outcomes', {}).get(feature['module'], evidence.get('outcome')) == 'PASSED' else 'incomplete')
+             complete else 'incomplete')
     return {'state': state, 'omitted_scenarios': omitted, 'scenario_count': len(expected),
             'passed': statuses.count('passed'), 'unknown': sum(x in {'not-run', 'stale', 'blocked', 'skipped'} for x in statuses)}
+
+
+def task_summary(inventory, evidence, review=None):
+    """A generated task conclusion; explanations cannot promote native evidence."""
+    from project_check import selection
+    task_id = review.get('change_id') if review else (evidence.get('task') or {}).get('id')
+    task = next((row for row in inventory.get('tasks', []) if row['id'] == task_id), None)
+    if task is None:
+        return None
+    chosen = selection(inventory, task=task_id)
+    scenarios = [s for s in inventory['scenarios'] if s['id'] in chosen['scenario_ids']]
+    results = {row['id']: row for row in evidence.get('results', [])}
+    gaps = list(evidence.get('gaps', []))
+    bound_scope = evidence.get('scope', '')
+    same_task = not bound_scope.startswith('task:') or bound_scope == chosen['scope']
+    covered = chosen['scenario_ids'] <= results.keys()
+    reqs = {r['id']: r for r in evidence.get('requirements', [])}
+    complete_requirements = chosen['requirement_ids'] <= reqs.keys() and all(
+        reqs[key]['source_reviewed'] and reqs[key]['scenarios'] and set(reqs[key]['scenarios']) <= results.keys()
+        for key in chosen['requirement_ids'])
+    credible = evidence.get('state') == 'current' and evidence.get('evidence_valid') is True and same_task
+    scoped_gaps, runner_failed = scope_readiness(scenarios, evidence)
+    for module in sorted(chosen['full_modules']):
+        if evidence.get('module_outcomes', {}).get(module) != 'PASSED':
+            scoped_gaps.append(module + '：关联回归模块尚未完整通过验收。')
+    gaps.extend(scoped_gaps)
+    statuses = [results.get(s['id'], {}).get('status', 'not-run') for s in scenarios]
+    status = ('failed' if credible and ('failed' in statuses or runner_failed or
+              bound_scope == chosen['scope'] and evidence.get('outcome') == 'FAILED') else
+              'passed' if credible and covered and complete_requirements and scenarios and not scoped_gaps and
+              all(x == 'passed' for x in statuses) and
+              (bound_scope != chosen['scope'] or evidence.get('outcome') == 'PASSED') else 'pending')
+    if not same_task:
+        gaps.append('执行证据属于另一项任务；请执行本次任务的验收。')
+    if evidence.get('state') != 'current':
+        gaps.append(evidence.get('message', '尚未执行本次任务验收。'))
+    missing = chosen['scenario_ids'] - results.keys()
+    if missing:
+        gaps.append('尚未执行：' + '、'.join(sorted(missing)))
+    gaps.extend(row['title'] + '：' + row['reason'] for row in evidence.get('results', [])
+                if row['id'] in chosen['scenario_ids'] and row['status'] != 'passed' and row.get('reason'))
+    changes = []
+    for row in (review or {}).get('node_changes', []):
+        if row['status'] == 'unchanged':
+            continue
+        before, after = row.get('before') or {}, row.get('after') or {}
+        notes = [n for n in (review or {}).get('reviewer_notes', []) if n['target_type'] == 'node' and n['target'] == row['id']]
+        changes.append({'id': row['id'], 'name': after.get('symbol') or before.get('symbol') or after.get('name') or before.get('name') or row['id'],
+                        'status': row['status'], 'before': before.get('description'), 'after': after.get('description'),
+                        'rationale': [n['text'] for n in notes if n['kind'] == 'rationale'],
+                        'notes': notes, 'reasons': row.get('reasons', []), 'verified': False})
+    return {'id': task_id, 'goal': task['goal'], 'status': status, 'scope': chosen['scope'],
+            'requirements': [r for r in inventory['requirements'] if r['id'] in task['requirement_ids']],
+            'scenarios': scenarios, 'changes': changes, 'impact': (review or {}).get('impact', {}),
+            'notes': (review or {}).get('reviewer_notes', []), 'gaps': list(dict.fromkeys(gaps)),
+            'unselected_ids': [s['id'] for s in inventory['scenarios'] if s['state'] == 'active' and s['id'] not in chosen['scenario_ids']]}
 
 
 def link_file(root, source, view_dir):
@@ -689,6 +781,7 @@ def view_data(root, model, inventory, evidence, review=None):
     mapped_scenarios = {key for feature in model['features'] for key in feature.get('scenario_ids', [])}
     return {'version': 1, 'generated_at': now(), 'snapshot': {'revision': snapshot['revision'], 'fingerprint': snapshot['fingerprint']},
             'model': rendered, 'inventory': inventory, 'acceptance': evidence, 'review': rendered_review,
+            'task': task_summary(inventory, evidence, rendered_review),
             'coverage': {'files': files, 'mapped_files': sum(x['mapped'] for x in files), 'total_files': len(files),
                          'unmapped_requirements': [r['id'] for r in inventory.get('requirements', []) if r['state'] == 'active' and r['id'] not in mapped_requirements],
                          'unmapped_scenarios': [s['id'] for s in inventory['scenarios'] if s['state'] == 'active' and s['id'] not in mapped_scenarios]},
@@ -713,7 +806,8 @@ def write_view(root, model, inventory, run_dir=None, review=None):
     write_json(directory / 'project.json', data)
     (directory / 'project.html').write_text(render_html(data), encoding='utf-8')
     return {'view': str(directory / 'project.html'), 'data': str(directory / 'project.json'),
-            'features': len(model['features']), 'nodes': len(model['nodes']), 'acceptance': evidence['state']}
+            'features': len(model['features']), 'nodes': len(model['nodes']), 'acceptance': evidence['state'],
+            'task': data['task']}
 
 
 def change_path(root, change_id):

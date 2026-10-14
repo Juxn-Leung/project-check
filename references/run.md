@@ -4,6 +4,8 @@
 
 先校验配置和清单：`python3 <skill-dir>/scripts/project_check.py validate --root <project>`。
 
+默认任务：`python3 <skill-dir>/scripts/project_check.py select --root <project> --task <id>`；再用同一范围执行 `preflight`。`validate` 展示的全项目缺口不等于本次任务失败，任务判定只核对所选需求与回归。任务场景由需求映射自动纳入，不能手工删掉失败或缺失项。
+
 全量：`python3 <skill-dir>/scripts/project_check.py select --root <project>`。
 
 模块：追加 `--module <id或唯一名称>`。脚本选择该模块及递归声明的 `regression_dependencies`；这是需要关联回归的模块，不等于所有基础设施依赖。准备服务依赖时仍以运行所需为准。未知模块直接报错，不能退化为零测试或全量。
@@ -40,11 +42,11 @@ pytest 使用 JUnit XML，Playwright 使用 JSON reporter，并在每个 runner 
 python3 <skill-dir>/scripts/project_check.py report --root <project> --results <run-dir>/results.json --inventory <run-dir>/inventory.json --out <run-dir>/REPORT.md
 ```
 
-模块运行追加与选择时一致的 `--module <id>`。汇总器不会运行测试；它检查结构、范围、需求映射、来源审阅、原生观察结果和冻结证据哈希。agent 仍须审阅测试断言及其业务含义。CI 接入时由实际运行器/适配器生成结果，不能把手写 JSON 当作可信门禁。
+任务运行追加与选择时一致的 `--task <id>`，模块运行追加 `--module <id>`。汇总器不会运行测试；它检查结构、范围、需求映射、来源审阅、原生观察结果和冻结证据哈希。agent 仍须审阅测试断言及其业务含义。CI 接入时由实际运行器/适配器生成结果，不能把手写 JSON 当作可信门禁。
 
 退出码 0 表示所选清单通过且无已知覆盖/预期缺口；1 表示失败、阻塞、跳过或覆盖不完整；2 表示输入/配置错误。即使失败也生成报告。空清单不通过。构建测试设施期间预期的非零退出码不要误当脚本崩溃。
 
-最终回答包含：测试版本与范围，四种状态数量，覆盖缺口，失败/阻塞的原因及证据路径。普通成功日志简述；不要只给“所有测试通过”而省略未验证范围。
+最终回答先给“改了什么、影响哪里、验收结果”三项摘要，结论使用“已通过/未通过/待验收”；列出实际行为、未验证范围和证据版本，附本地详情页链接。详情保留四种原始状态、覆盖缺口、失败/阻塞原因及证据路径，不用“所有测试通过”省略范围。
 
 ## 可选修复
 
@@ -52,6 +54,6 @@ python3 <skill-dir>/scripts/project_check.py report --root <project> --results <
 
 ## 更新视图与收尾
 
-报告生成后运行 `freshness --root <project> --run-dir <run-dir>`。不匹配时旧报告保留，但不用于当前完成判断；修复后新建 run。`seal` 验证通过的完整结果并核对源码，保存收尾证据。需要 OpenSpec 归档时继续按 openspec.md 的 `finish` 执行；仅测试请求不隐含归档授权。
+报告生成后运行 `freshness --root <project> --run-dir <run-dir>`。不匹配时旧报告保留，但不用于当前完成判断；修复后新建 run。`seal --task <id>` 验证任务完整结果并核对源码，保存收尾证据；全量和模块运行保留原方式。需要 OpenSpec 归档时继续按 openspec.md 的 `finish` 执行；仅测试请求不隐含归档授权。
 
 使用 `map --root <project> --run-dir <run-dir>` 将实际证据连接到功能视图；`review --change-id <id>` 与任务开始时 baseline 对比，解释相关源码及关联影响。需求/模型补充放在下一次 snapshot 之前，不在测试后改变验收输入再沿用旧结果。

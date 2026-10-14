@@ -126,6 +126,18 @@ def validate_inventory(data):
         if "checks" in item:
             from acceptance import validate_checks
             validate_checks(item["checks"], tests)
+    tasks = records(data.get("tasks", []), "tasks")
+    require(not tasks or data["version"] == 2, "tasks require inventory v2")
+    for key, item in tasks.items():
+        require(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,79}", key), f"{key}: unsafe task id")
+        require(nonempty(item.get("goal")), f"{key}: missing task goal")
+        refs = strings(item.get("requirement_ids"), key + ": requirement_ids", False)
+        require(len(refs) == len(set(refs)) and set(refs) <= requirements.keys(), f"{key}: invalid task requirements")
+        require(all(requirements[ref]["state"] == "active" for ref in refs), f"{key}: task maps retired requirement")
+        regression = strings(item.get("regression_scenario_ids", []), key + ": regression_scenario_ids")
+        require(len(regression) == len(set(regression)) and set(regression) <= scenarios.keys(),
+                f"{key}: invalid task regression scenarios")
+        require(all(scenarios[ref]["state"] == "active" for ref in regression), f"{key}: task maps retired scenario")
     return data
 
 
@@ -190,17 +202,51 @@ def scope_modules(inventory, module=None):
     return scope, chosen
 
 
-def select(inventory, module=None):
+def task_selection(inventory, task):
+    """Mandatory requirement scenarios plus explicit and module-level regressions."""
+    requirements = {x["id"]: x for x in inventory.get("requirements", [])}
+    scenarios = {x["id"]: x for x in inventory["scenarios"] if x["state"] == "active"}
+    modules = {x["id"]: x for x in inventory["modules"]}
+    required = set(task["requirement_ids"])
+    selected_ids = {key for key, row in scenarios.items() if required.intersection(row.get("requirement_ids", []))}
+    selected_ids.update(task.get("regression_scenario_ids", []))
+    seeds = {requirements[key]["module"] for key in required}
+    seeds.update(scenarios[key]["module"] for key in selected_ids)
+    full_modules, pending = set(), [dep for key in seeds for dep in modules[key].get("regression_dependencies", [])]
+    while pending:
+        key = pending.pop()
+        if key not in full_modules:
+            full_modules.add(key)
+            pending.extend(modules[key].get("regression_dependencies", []))
+    selected_ids.update(key for key, row in scenarios.items() if row["module"] in full_modules)
+    required.update(key for key, row in requirements.items() if row["state"] == "active" and row["module"] in full_modules)
+    required.update(ref for key in selected_ids for ref in scenarios[key].get("requirement_ids", []))
+    return {"modules": seeds | full_modules, "full_modules": full_modules, "requirement_ids": required,
+            "scenario_ids": selected_ids}
+
+
+def selection(inventory, module=None, task=None):
+    require(not (module is not None and task is not None), "Choose only one of module or task")
+    if task is not None:
+        tasks = {x["id"]: x for x in inventory.get("tasks", [])}
+        require(task in tasks, f"Unknown task: {task}")
+        return {"scope": "task:" + task, "task": tasks[task], **task_selection(inventory, tasks[task])}
     scope, chosen = scope_modules(inventory, module)
-    items = [x for x in inventory["scenarios"] if x["state"] == "active" and x["module"] in chosen]
-    return scope, items
+    return {"scope": scope, "modules": chosen, "full_modules": chosen,
+            "requirement_ids": {x["id"] for x in inventory.get("requirements", []) if x["state"] == "active" and x["module"] in chosen},
+            "scenario_ids": {x["id"] for x in inventory["scenarios"] if x["state"] == "active" and x["module"] in chosen}}
 
 
-def preflight(project, inventory, root, module=None, environment=None):
+def select(inventory, module=None, task=None):
+    chosen = selection(inventory, module, task)
+    return chosen["scope"], [x for x in inventory["scenarios"] if x["id"] in chosen["scenario_ids"]]
+
+
+def preflight(project, inventory, root, module=None, environment=None, task=None):
     """Describe execution readiness separately from valid inventory structure."""
     import os
     environment = os.environ if environment is None else environment
-    scope, selected = select(inventory, module)
+    scope, selected = select(inventory, module, task)
     runners = records(project["runners"], "runners")
     issues, runnable = [], []
     for scenario in selected:
@@ -277,27 +323,32 @@ def source_current(source, observed):
                 (source["kind"] != "external" or observed.get("revision") == source["revision"]))
 
 
-def requirement_gaps(inventory, chosen, review):
+def requirement_gaps(inventory, chosen, review, *, requirement_ids=None, scenario_ids=None, full_modules=None):
     gaps, coverage = [], []
     if inventory["version"] == 1:
         return [f"{module}: 旧清单尚未登记和审阅需求。" for module in sorted(chosen)], coverage
-    requirements = [x for x in inventory["requirements"] if x["state"] == "active" and x["module"] in chosen]
+    requirements = [x for x in inventory["requirements"] if x["state"] == "active" and x["module"] in chosen
+                    and (requirement_ids is None or x["id"] in requirement_ids)]
     sources = {x["id"]: x for x in inventory["requirement_sources"]}
     reviews = {x["id"]: x for x in review if isinstance(x, dict) and nonempty(x.get("id"))}
 
+    required_sources = {x["source"] for x in requirements}
     for source in sources.values():
-        if chosen.intersection(source["modules"]) and not source_current(source, reviews.get(source["id"])):
+        in_scope = chosen.intersection(source["modules"]) if requirement_ids is None else (
+            source["id"] in required_sources or set(full_modules or []).intersection(source["modules"]))
+        if in_scope and not source_current(source, reviews.get(source["id"])):
             gaps.append(f"{source['id']}: 需求来源未复核、已变化或缺少运行快照。")
     scenarios = [x for x in inventory["scenarios"] if x["state"] == "active"]
     for scenario in scenarios:
-        if scenario["module"] in chosen and not scenario["requirement_ids"]:
+        if scenario["module"] in chosen and (scenario_ids is None or scenario["id"] in scenario_ids) and not scenario["requirement_ids"]:
             gaps.append(f"{scenario['id']}: 活动场景未关联已登记需求。")
     for module in sorted(chosen):
         module_reqs = [x for x in requirements if x["module"] == module]
-        if not module_reqs:
+        if not module_reqs and (full_modules is None or module in full_modules):
             gaps.append(f"{module}: 没有已登记的有效需求，不能确认模块需求完整。")
         for req in module_reqs:
-            mapped = [x["id"] for x in scenarios if x["module"] == module and req["id"] in x["requirement_ids"]]
+            mapped = [x["id"] for x in scenarios if x["module"] == module and req["id"] in x["requirement_ids"]
+                      and (scenario_ids is None or x["id"] in scenario_ids)]
             source = sources[req["source"]]
             reviewed = source_current(source, reviews.get(source["id"]))
             if not mapped:
@@ -340,9 +391,10 @@ def timestamp(value, label):
     return time
 
 
-def summarize(inventory, payload, base, module=None):
+def summarize(inventory, payload, base, module=None, task=None):
     validate_inventory(inventory)
-    scope, selected = select(inventory, module)
+    chosen = selection(inventory, module, task)
+    scope, selected = select(inventory, module, task)
     require(isinstance(payload, dict) and payload.get("version") in {1, 2}, "results: version must be 1 or 2")
     run = payload.get("run")
     require(isinstance(run, dict), "results: missing run")
@@ -360,8 +412,8 @@ def summarize(inventory, payload, base, module=None):
     gaps = []
     if not selected:
         gaps.append("零场景：没有可执行验收范围。")
-    _, chosen_modules = scope_modules(inventory, module)
-    for empty_module in sorted(chosen_modules - {x["module"] for x in selected}):
+    chosen_modules = chosen["modules"]
+    for empty_module in sorted(chosen["full_modules"] - {x["module"] for x in selected}):
         gaps.append(f"{empty_module}: 模块尚无活动验收场景。")
     manifests, manifest_problems, observations = {}, [], {}
     runner_results = []
@@ -395,7 +447,8 @@ def summarize(inventory, payload, base, module=None):
             require(runner_status in {"passed", "failed", "blocked"}, f"invalid runner status: {observation_path}")
             runner_errors = strings(observation.get("runner_errors", []), "runner errors")
             runner_results.append({"id": observation.get("runner", observation_path), "status": runner_status,
-                                   "errors": runner_errors, "case_count": len(observation["cases"])})
+                                   "errors": runner_errors, "case_count": len(observation["cases"]),
+                                   "test_ids": [case.get("id") for case in observation["cases"] if isinstance(case, dict)]})
             if runner_status == "blocked":
                 gaps.append(f"运行器阻塞：{observation.get('runner', observation_path)}：{'；'.join(runner_errors) or '零用例'}")
             for case in observation["cases"]:
@@ -411,7 +464,9 @@ def summarize(inventory, payload, base, module=None):
         require(isinstance(review_data, dict) and review_data.get("version") == 1 and
                 isinstance(review_data.get("sources"), list), "invalid source review snapshot")
         review = review_data["sources"]
-    mapping_gaps, requirement_coverage = requirement_gaps(inventory, chosen_modules, review)
+    mapping_gaps, requirement_coverage = requirement_gaps(inventory, chosen_modules, review, **(
+        {"requirement_ids": chosen["requirement_ids"], "scenario_ids": chosen["scenario_ids"],
+         "full_modules": chosen["full_modules"]} if task is not None else {}))
     gaps.extend(mapping_gaps)
     native_ok = bool(native) and all(evidence_exists(x, base) and
                                     (payload["version"] == 1 or artifact_ok(x, base, manifests)) for x in native)
@@ -507,22 +562,25 @@ def summarize(inventory, payload, base, module=None):
     review_by_id = {x["id"]: x for x in review}
     for module_id in sorted(chosen_modules):
         module_results = [x for x in evaluated if scenario_modules[x["id"]] == module_id]
-        module_reqs = [x for x in requirement_coverage if x["module"] == module_id]
-        mappings_ok = bool(module_reqs) and all(x["scenarios"] and x["source_reviewed"] for x in module_reqs)
+        module_gaps, module_reqs = requirement_gaps(inventory, {module_id}, review)
+        mappings_ok = bool(module_reqs) and not module_gaps
         sources_ok = payload["version"] == 2 and all(
             source_current(source, review_by_id.get(source["id"]))
             for source in inventory["requirement_sources"] if module_id in source["modules"])
-        module_scenarios = [x for x in selected if x["module"] == module_id]
+        module_scenarios = [x for x in inventory["scenarios"] if x["state"] == "active" and x["module"] == module_id]
+        scope_complete = {x["id"] for x in module_scenarios} <= expected_ids
         scenario_basis_ok = all(x["coverage"] == "implemented" and x["basis"]["status"] == "confirmed" and
                                 bool(x.get("requirement_ids"))
                                 for x in module_scenarios)
         module_outcome = ("FAILED" if any(x["status"] == "failed" for x in module_results) else
-                          "PASSED" if global_evidence_ok and mappings_ok and sources_ok and scenario_basis_ok and module_results and
+                          "PASSED" if scope_complete and global_evidence_ok and mappings_ok and sources_ok and scenario_basis_ok and module_results and
                           all(x["status"] == "passed" for x in module_results) else "INCOMPLETE")
         modules.append({"id": module_id, "outcome": module_outcome, "requirements": len(module_reqs),
-                        "mapped_requirements": sum(bool(x["scenarios"]) for x in module_reqs)})
+                        "mapped_requirements": sum(bool(x["scenarios"]) for x in module_reqs), "scope_complete": scope_complete})
     return {"run": run, "outcome": outcome, "counts": counts, "gaps": gaps,
             "requirements": requirement_coverage, "modules": modules, "results": evaluated,
+            "task": chosen.get("task"), "evidence_valid": global_evidence_ok,
+            "unselected_ids": [x["id"] for x in inventory["scenarios"] if x["state"] == "active" and x["id"] not in expected_ids],
             "native_counts": native_counts, "unmapped_tests": unmapped_tests,
             "unmapped_failures": unmapped_failures, "runners": runner_results}
 
@@ -535,6 +593,10 @@ def render_report(summary):
     run = summary["run"]
     lines = [f"# Project Check · {cell(run['id'])}", "", f"结果：**{summary['outcome']}**", "",
              "此结果仅针对所选清单；文件存在校验不替代原生报告内容审阅。", ""]
+    if summary.get("task"):
+        lines += ["任务目标：" + cell(summary["task"]["goal"]), "",
+                  "任务通过仅针对下列场景；模块结论仍按模块完整范围判定。", "",
+                  "未纳入本次验收：" + cell(", ".join(summary["unselected_ids"]) or "没有其他已登记活动场景"), ""]
     for field in ("scope", "revision", "workspace", "environment", "started_at", "finished_at"):
         lines.append(f"- {field}: {cell(run[field])}")
     lines += ["", " | ".join(f"{k}: {v}" for k, v in summary["counts"].items()), "",
@@ -595,7 +657,9 @@ def main(argv=None):
     parser.add_argument("command", choices=("init", "validate", "checklist", "select", "snapshot", "adapt", "report",
                                            "map", "baseline", "review", "seal", "finish", "freshness", "preflight"))
     parser.add_argument("--root", required=True, type=Path)
-    parser.add_argument("--module", help="Module ID or unique display name (select/report/seal)")
+    scope_args = parser.add_mutually_exclusive_group()
+    scope_args.add_argument("--module", help="Module ID or unique display name (select/preflight/report/seal)")
+    scope_args.add_argument("--task", help="Task ID matching the change-id (select/preflight/report/seal)")
     parser.add_argument("--inventory", type=Path, help="Frozen inventory snapshot (report only)")
     parser.add_argument("--results", type=Path, help="Observed results JSON (report only)")
     parser.add_argument("--out", type=Path, help="New report file; existing files are not overwritten")
@@ -611,6 +675,7 @@ def main(argv=None):
     try:
         require(args.root.is_dir(), "Project root does not exist")
         require(not args.module or args.command in {"select", "report", "seal", "preflight"}, "--module is only valid for select/report/seal/preflight")
+        require(not args.task or args.command in {"select", "report", "seal", "preflight"}, "--task is only valid for select/report/seal/preflight")
         require(not (args.inventory or args.results or args.out) or args.command == "report", "--inventory/--results/--out are report-only")
         require(not args.run_dir or args.command in {"snapshot", "adapt", "map", "review", "seal", "finish", "freshness"},
                 "--run-dir is not supported by this command")
@@ -629,7 +694,7 @@ def main(argv=None):
             require(args.run_dir is not None, f"{args.command} requires --run-dir")
             if args.command == "seal":
                 from completion import seal
-                result = seal(args.root, args.run_dir, args.module)
+                result = seal(args.root, args.run_dir, args.module, args.task)
             elif args.command == "finish":
                 from completion import finish
                 require(args.change_id is not None, "finish requires --change-id")
@@ -659,7 +724,7 @@ def main(argv=None):
         if args.command not in {"report", "adapt"}:
             validate_project(read_json(config / "project.json"), inventory)
         if args.command == "preflight":
-            result = preflight(read_json(config / "project.json"), inventory, args.root, args.module)
+            result = preflight(read_json(config / "project.json"), inventory, args.root, args.module, task=args.task)
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0 if result["ready"] else 1
         elif args.command == "validate":
@@ -676,7 +741,7 @@ def main(argv=None):
             path.write_text(render_checklist(inventory), encoding="utf-8")
             print(path)
         elif args.command == "select":
-            scope, items = select(inventory, args.module)
+            scope, items = select(inventory, args.module, args.task)
             print(json.dumps({"scope": scope, "selected_ids": [x["id"] for x in items]}, ensure_ascii=False, indent=2))
         elif args.command == "snapshot":
             require(args.run_dir is not None, "snapshot requires --run-dir")
@@ -707,7 +772,7 @@ def main(argv=None):
             if read_json(args.results).get("version") == 2:
                 require(args.inventory is not None and args.inventory.resolve() == (args.results.resolve().parent / "inventory.json"),
                         "v2 report requires the run's frozen inventory.json")
-            summary = summarize(inventory, read_json(args.results), args.results.resolve().parent, args.module)
+            summary = summarize(inventory, read_json(args.results), args.results.resolve().parent, args.module, args.task)
             report = render_report(summary)
             if args.out:
                 with args.out.open("x", encoding="utf-8") as file:

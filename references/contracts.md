@@ -29,11 +29,26 @@
       {"id":"refresh", "kind":"reload", "description":"重新加载页面"},
       {"id":"persisted", "kind":"assert", "description":"重新读取后客户仍存在"}
     ]
+  }],
+  "tasks": [{
+    "id": "create-customer", "goal": "创建客户后刷新仍可读取",
+    "requirement_ids": ["REQ-CUSTOMER-1"], "regression_scenario_ids": []
   }]
 }
 ```
 
 `requirement_sources` 用 `modules` 明确来源覆盖的模块；即使来源暂未提取出需求，其变化也会阻止这些模块得到完整结论。`file` 来源使用相对项目根目录的路径和真实 SHA-256。外部或口头确认的来源使用 `{"kind":"external","modules":["customers"],"locator":"...","revision":"...","reviewed":true}`；版本与复核状态需要由执行者确认。`reviewed` 不能靠脚本自动推断。需求及场景的 `active/retired` 保留历史；退役项必须写 `retirement_reason`。有效需求只由同模块的活动场景映射。每个所选模块都需要登记有效需求；未登记、未映射、来源未复核或本次开始时文件哈希变化，报告都是 `INCOMPLETE`。
+
+`tasks` 是 v2 的可选字段，旧清单可以省略。任务 `id` 与 `baseline/review --change-id` 共用，使用字母、数字、连字符、下划线或点，最多 80 字符；`goal` 为本次用户目标，`requirement_ids` 为非空且不重复的活动需求 ID，`regression_scenario_ids` 为可选且不重复的活动场景 ID。登记、选择与维护由 Codex 完成。
+
+任务选择自动包含任务需求的全部活动场景、额外指定的回归场景，以及上述场景/需求所属模块递归声明的回归依赖模块全部活动场景。回归依赖模块未映射的需求仍阻塞任务；额外指定一个回归场景不自动要求其整个模块。未涉及的需求、来源及缺失场景不进入任务结论，结构错误仍须修正。任务通过不会让未完整覆盖的模块显示通过。
+
+```sh
+python3 <skill-dir>/scripts/project_check.py select --root <project> --task create-customer
+python3 <skill-dir>/scripts/project_check.py preflight --root <project> --task create-customer
+```
+
+`--task` 适用于 `select/preflight/report/seal`，与 `--module` 互斥；未知任务直接报错。结果的 `run.scope` 使用选择命令输出的 `task:<id>`，`selected_ids` 必须完全匹配选择结果，不能删掉任务必需场景。`report` 与 `seal` 使用同一个任务 ID。
 
 浏览器场景新增有序 `checks`：稳定 `id`、`kind`、中文 `description`。多个映射用例时，每项必须带完整 `test` ID。合法 kind 为 `click/fill/selectOption/check/press/goto/reload/assert`，至少包含一项业务断言。旧清单仍可读取，缺少 checks 的浏览器场景只能得到阻塞；详见 browser.md 的 reporter 接入。
 
@@ -64,7 +79,7 @@ pytest 使用内置 JUnit XML 输出（`pytest --junitxml=<path>`），用例 ID
     "id": "20260929T100000Z", "started_at": "2026-09-29T10:00:00Z",
     "finished_at": "2026-09-29T10:01:00Z", "revision": "commit SHA 或 non-git",
     "workspace": "clean 或变更摘要", "environment": "隔离数据库；Chromium",
-    "scope": "module:customers", "selected_ids": ["CUSTOMERS-001"],
+    "scope": "task:create-customer", "selected_ids": ["CUSTOMERS-001"],
     "source_review": "source-review.json", "snapshot_manifest": "snapshot-manifest.json",
     "native_reports": ["native/browser.json"],
     "observations": ["observations/browser.json"],
@@ -81,6 +96,8 @@ pytest 使用内置 JUnit XML 输出（`pytest --junitxml=<path>`），用例 ID
 `observed_tests`、`checks`、`flaky` 和浏览器 `runtime_errors_checked` 在 v2 中来自适配器，不接受手填字段代替原生观察。`assertions_checked` 仍须在核对测试断言后明确设置；`evidence` 可增加其他已冻结附件，但其路径也必须列入 evidence 清单。浏览器事件日志或截图本身不算操作轨迹；通过需要 reporter 的 `project-check-steps` 附件中可匹配清单的实际动作与断言；trace 和普通步骤仅作为诊断记录。缺少原生用例或冻结附件、哈希不符、缺少浏览器事件记录会阻塞声称通过的场景；原生失败、重试后通过或未解释的运行错误仍为失败。
 
 报告使用运行目录里的清单快照和来源审阅快照，历史结果不会随当前需求文件变化而改写。报告只证明已登记来源和场景的覆盖，不证明未知需求不存在。退出码仍为 `0/1/2`（通过／失败或不完整／输入无效）。
+
+任务示例的报告命令追加 `--task create-customer`；全量和模块报告继续支持 `all`、`module:<id>`。报告保留原始 `passed/failed/blocked/skipped`，任务详情页和聊天摘要使用“已通过/未通过/待验收”。页面 `task` 是从清单、review 与证据生成的摘要，不是独立维护的数据源；讲解不能提升验收状态。
 
 ## 源码身份与收尾
 

@@ -68,14 +68,15 @@ def check_seal(run_dir):
     return data
 
 
-def checked_run(root, run_dir, module=None):
+def checked_run(root, run_dir, module=None, task=None):
     inventory, payload = pc.read_json(run_dir / "inventory.json"), pc.read_json(run_dir / "results.json")
     pc.require(inventory.get("version") == payload.get("version") == 2, "Completion requires v2 inventory/results")
     scope = payload["run"].get("scope", "")
-    pc.require(scope == "all" or scope.startswith("module:"), "Unsupported run scope")
-    actual_module = None if scope == "all" else scope.split(":", 1)[1]
-    pc.require(module is None or pc.scope_modules(inventory, module)[0] == scope, "Seal scope mismatch")
-    summary = pc.summarize(inventory, payload, run_dir, actual_module)
+    pc.require(scope == "all" or scope.startswith(("module:", "task:")), "Unsupported run scope")
+    actual_module = scope.split(":", 1)[1] if scope.startswith("module:") else None
+    actual_task = scope.split(":", 1)[1] if scope.startswith("task:") else None
+    pc.require(module is None and task is None or pc.selection(inventory, module, task)["scope"] == scope, "Seal scope mismatch")
+    summary = pc.summarize(inventory, payload, run_dir, actual_module, actual_task)
     pc.require(summary["outcome"] == "PASSED", "Acceptance is not PASSED: " + "; ".join(summary["gaps"]))
     manifests = [payload["run"]["snapshot_manifest"]] + payload["run"]["evidence_manifests"]
     names = {"results.json"}
@@ -92,10 +93,10 @@ def checked_run(root, run_dir, module=None):
     return inventory, payload, summary, snapshot, names
 
 
-def seal(root, run_dir, module=None):
+def seal(root, run_dir, module=None, task=None):
     root, run_dir = locations(root, run_dir)
     with lock(run_dir / ".completion.lock"):
-        _, payload, summary, snapshot, names = checked_run(root, run_dir, module)
+        _, payload, summary, snapshot, names = checked_run(root, run_dir, module, task)
         if (run_dir / "seal.json").exists():
             return check_seal(run_dir)
         immutable(run_dir / "sealed-report.json", summary)
@@ -216,7 +217,7 @@ def policy_for(project, change):
     return policy, mapping, argv, timeout
 
 
-def mapping_gaps(root, change, inventory, mapping, selected_ids):
+def mapping_gaps(root, change, inventory, mapping, selected_ids, task=None):
     parsed = parse_specs(root, change)
     gaps = parsed["problems"][:]
     requirements = {r["id"]: r for r in inventory["requirements"] if r["state"] == "active"}
@@ -255,6 +256,14 @@ def mapping_gaps(root, change, inventory, mapping, selected_ids):
     for id in req_ids:
         required_modules.update(pc.scope_modules(inventory, requirements[id]["module"])[1])
     required_scenarios = {s["id"] for s in scenarios.values() if s["module"] in required_modules}
+    if task is not None:
+        if task != change:
+            gaps.append("Task ID must match the OpenSpec change ID")
+        declared_task = pc.selection(inventory, task=task)["task"]
+        if not req_ids <= set(declared_task["requirement_ids"]):
+            gaps.append("Task omits OpenSpec change requirements")
+        required_scenarios = pc.task_selection(inventory, {"requirement_ids": list(req_ids),
+                                                       "regression_scenario_ids": []})["scenario_ids"]
     if not scenario_ids <= required_scenarios:
         gaps.append("Explicit scenario mapping is outside change/regression modules")
     if not required_scenarios <= set(selected_ids):
@@ -363,12 +372,14 @@ def finish(root, run_dir, change, execute=False):
             operation_path = run_dir / ("archive-command-" + change + ".json")
             operation = pc.read_json(operation_path) if operation_path.exists() else {"ok": False, "error": "interrupted; command outcome unknown"}
             return record_archive(root, run_dir, change, intent, operation, intent["preflight"])
-        inventory, _, _, snapshot, _ = checked_run(root, run_dir)
+        inventory, payload, _, snapshot, _ = checked_run(root, run_dir)
         pc.require(data["source_fingerprint"] == snapshot["fingerprint"], "Seal source identity mismatch")
         project = pc.read_json(root / ".project-check/project.json")
         pc.require(pc.read_json(root / ".project-check/inventory.json") == inventory, "Current inventory differs from sealed inventory")
         policy, mapping, argv, timeout = policy_for(project, change)
-        gaps, _ = mapping_gaps(root, change, inventory, mapping, data["selected_ids"])
+        scope = payload["run"]["scope"]
+        task = scope.split(":", 1)[1] if scope.startswith("task:") else None
+        gaps, _ = mapping_gaps(root, change, inventory, mapping, data["selected_ids"], task)
         active = change_path(root, change)
         before = directory_hashes(active)
         tasks = active / "tasks.md"
