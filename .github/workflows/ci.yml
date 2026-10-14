@@ -25,3 +25,43 @@ jobs:
       - run: npm run test:python
       - name: Pack and install preview
         run: node scripts/release.mjs patch true
+
+  browser-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install isolated browser runtime
+        run: |
+          npm install --prefix "$RUNNER_TEMP/project-check-runtime" --ignore-scripts --no-audit --no-fund --save-exact @playwright/test@1.63.0
+          node "$RUNNER_TEMP/project-check-runtime/node_modules/@playwright/test/cli.js" install --with-deps chromium
+      - name: Verify native reporter and real browser outcomes
+        run: |
+          export PROJECT_CHECK_PLAYWRIGHT_ROOT="$RUNNER_TEMP/project-check-runtime"
+          node tests/browser-integration.mjs --reporter-only --out "$RUNNER_TEMP/project-check-reporter"
+          node tests/browser-integration.mjs --out "$RUNNER_TEMP/project-check-browser"
+          node tests/browser-integration.mjs --map-only --out "$RUNNER_TEMP/project-check-map"
+      - name: Preserve regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-check-browser-evidence
+          path: |
+            ${{ runner.temp }}/project-check-reporter/*.json
+            ${{ runner.temp }}/project-check-reporter/*.log
+            ${{ runner.temp }}/project-check-reporter/run
+            ${{ runner.temp }}/project-check-browser/*.json
+            ${{ runner.temp }}/project-check-browser/*.log
+            ${{ runner.temp }}/project-check-browser/run
+            ${{ runner.temp }}/project-check-browser/artifacts
+            ${{ runner.temp }}/project-check-map/*.json
+            ${{ runner.temp }}/project-check-map/*.log
+            ${{ runner.temp }}/project-check-map/artifacts
+          retention-days: 7
