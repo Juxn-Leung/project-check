@@ -7,7 +7,7 @@ type PhaseController = {
 
 /** Import this test object instead of Playwright's base test in browser scenarios. */
 export const test = base.extend<{ phase: PhaseController }>({
-  phase: async ({ context }, use, testInfo) => {
+  phase: [async ({ context }, use, testInfo) => {
     const recorder = new PhaseRecorder();
     const bound = new WeakSet<object>();
     const bind = (page: import('@playwright/test').Page) => {
@@ -45,7 +45,7 @@ export const test = base.extend<{ phase: PhaseController }>({
       body: JSON.stringify(log), contentType: 'application/json',
     });
     if (log.unexpected.length) throw new Error(`Unexpected browser events: ${log.unexpected.join('; ')}`);
-  },
+  }, { auto: true }],
 });
 
 export { expect } from '@playwright/test';

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, writeFile, mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { nextVersion, publicationDecision, readRegistry, git, syncRelease } from '../scripts/release.mjs';
+import { nextVersion, publicationDecision, readRegistry, verifyRegistryIntegrity, git, syncRelease } from '../scripts/release.mjs';
 
 test('stable version choices reset lower components correctly', () => {
   assert.equal(nextVersion('1.2.3', 'patch'), '1.2.4');
@@ -30,6 +30,38 @@ test('only registry 404 means absent; authentication and network failures stop r
   }
   await assert.rejects(readRegistry('fixture', async () => { throw new Error('network down'); }), /network down/);
   assert.deepEqual(await readRegistry('fixture', async () => ({ ok: true, status: 200, json: async () => ({ name: 'fixture' }) })), { name: 'fixture' });
+});
+
+test('registry verification waits for the published version and its integrity', async () => {
+  const responses = [null, { name: 'fixture' }, { dist: { integrity: 'sha512-abc' } }];
+  let reads = 0;
+  let waits = 0;
+  await verifyRegistryIntegrity('fixture/0.2.0', 'sha512-abc', {
+    read: async () => responses[reads++],
+    sleep: async () => { waits++; },
+    attempts: 3,
+  });
+  assert.equal(reads, 3);
+  assert.equal(waits, 2);
+});
+
+test('registry verification rejects different contents without waiting', async () => {
+  let waited = false;
+  await assert.rejects(verifyRegistryIntegrity('fixture/0.2.0', 'sha512-abc', {
+    read: async () => ({ dist: { integrity: 'sha512-other' } }),
+    sleep: async () => { waited = true; },
+  }), /different contents/);
+  assert.equal(waited, false);
+});
+
+test('registry verification reports a version still unavailable after all attempts', async () => {
+  let reads = 0;
+  await assert.rejects(verifyRegistryIntegrity('fixture/0.2.0', 'sha512-abc', {
+    read: async () => { reads++; return null; },
+    sleep: async () => {},
+    attempts: 3,
+  }), /could not yet be verified/);
+  assert.equal(reads, 3);
 });
 
 async function repository(t) {

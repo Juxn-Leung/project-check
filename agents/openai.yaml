@@ -1,4 +1,4 @@
 interface:
-  display_name: "Project Check · 项目验收"
-  short_description: "为 Web 项目建立测试清单，执行全量或模块测试，并交付操作与报错证据"
-  default_prompt: "使用 $project-check 为当前项目建立或增量更新测试清单，补齐交互和错误检查，并试运行验证。"
+  display_name: "Project Check · 项目理解与验收"
+  short_description: "用关系图、功能表和字段表解释方法用途，追踪修改前后的代码与影响"
+  default_prompt: "使用 $project-check 分析当前项目，生成关系图、功能表和字段表；重点讲解本次修改的方法、前后行为及关联影响。"

@@ -10,6 +10,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
 
 
 def load(name, path):
@@ -42,7 +43,9 @@ class V2GateTests(unittest.TestCase):
                            "state": "active", "basis": {"status": "confirmed", "source": "approved brief"},
                            "requirement_ids": ["REQ-1"], "preconditions": [], "actions": ["点击创建"],
                            "expected": ["记录存在"], "coverage": "implemented", "runner": "browser",
-                           "tests": ["suite::create"], "dependency_mode": "real"}],
+                           "tests": ["suite::create"], "dependency_mode": "real",
+                           "checks": [{"id": "create", "kind": "click", "description": "点击创建"},
+                                      {"id": "saved", "kind": "assert", "description": "验证记录存在"}]}],
         }
         self.payload = {"version": 2, "run": {"id": "run-1", "started_at": "2026-09-29T10:00:00Z",
                         "finished_at": "2026-09-29T10:01:00Z", "revision": "fixture", "workspace": "clean",
@@ -55,7 +58,9 @@ class V2GateTests(unittest.TestCase):
                                      "unexpected_errors": [], "evidence": [], "interaction_evidence": []}]}
         self.observation = {"version": 1, "cases": [{"id": "suite::create", "status": "passed", "flaky": False,
                             "evidence": ["native.xml"], "interaction_evidence": ["actions.txt"],
-                            "runtime_errors_checked": True, "unexpected_errors": [], "issues": []}]}
+                            "runtime_errors_checked": True, "unexpected_errors": [], "issues": [],
+                            "checks": [{"id": "create", "kind": "click", "verified": True},
+                                       {"id": "saved", "kind": "assert", "verified": True}]}]}
         self.write_evidence()
 
     def write_evidence(self):
@@ -153,6 +158,14 @@ class V2GateTests(unittest.TestCase):
         self.write_evidence()
         self.assertEqual(self.summarize()["results"][0]["status"], "blocked")
 
+    def test_unmapped_native_failure_prevents_green_run(self):
+        self.observation["cases"].append({"id": "suite::unregistered", "status": "failed"})
+        self.write_evidence()
+        summary = self.summarize()
+        self.assertEqual(summary["outcome"], "FAILED")
+        self.assertEqual(summary["unmapped_failures"], ["suite::unregistered"])
+        self.assertIn("suite::unregistered", pc.render_report(summary))
+
     def test_manual_native_flags_cannot_replace_adapter(self):
         self.payload["results"][0]["runtime_errors_checked"] = True
         with self.assertRaisesRegex(ValueError, "must come from the adapter"):
@@ -178,6 +191,23 @@ class V2GateTests(unittest.TestCase):
 
 
 class AdapterTests(unittest.TestCase):
+    def test_expected_failure_remains_failed_for_acceptance(self):
+        native = self.root / "playwright.json"
+        native.write_text(json.dumps({"suites": [{"file": "test.spec.ts", "specs": [{"title": "known broken", "tests": [{
+            "expectedStatus": "failed", "status": "expected", "results": [{"status": "failed"}]}]}]}]}))
+        result = adapters.adapt_report("playwright-json", native, self.output, self.run, "browser")
+        self.assertEqual(pc.read_json(self.run / result["observations"])["cases"][0]["status"], "failed")
+
+    def test_runner_startup_error_is_frozen_as_blocked(self):
+        native = self.root / "playwright.json"
+        native.write_text(json.dumps({"suites": [], "errors": [{"message": "port already used"}]}))
+        result = adapters.adapt_report("playwright-json", native, self.output, self.run, "browser")
+        observation = pc.read_json(self.run / result["observations"])
+        self.assertEqual(observation["cases"], [])
+        self.assertEqual(observation["runner_status"], "blocked")
+        self.assertEqual(observation["runner_errors"], ["port already used"])
+        self.assertEqual(pc.verified_manifest(result["evidence_manifest"], self.run)[1], [])
+
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

@@ -32,6 +32,21 @@ export async function readRegistry(path, fetcher = fetch) {
   return response.json();
 }
 
+export async function verifyRegistryIntegrity(path, integrity, {
+  read = readRegistry,
+  sleep = ms => new Promise(resolve => setTimeout(resolve, ms)),
+  attempts = 60,
+  intervalMs = 5000,
+} = {}) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const current = await read(path);
+    if (current?.dist?.integrity === integrity) return;
+    if (current?.dist?.integrity) publicationDecision(current, integrity);
+    if (attempt + 1 < attempts) await sleep(intervalMs);
+  }
+  throw new Error('Publish returned, but registry integrity could not yet be verified. Re-run this same workflow run; do not bump the version again.');
+}
+
 export function command(program, args, { capture = false, allowFailure = false, cwd } = {}) {
   const result = spawnSync(program, args, { cwd, encoding: 'utf8', stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit' });
   if (result.error) throw result.error;
@@ -124,15 +139,8 @@ export async function release(type, dryRun) {
       command('npm', ['publish', tarball, '--access', 'public', '--tag', 'latest', '--provenance', '--ignore-scripts']);
     }
     registryPublished = true;
-    // Verify registry bytes before updating Git. A delayed registry response is not a successful verification.
-    let verified = false;
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const current = await readRegistry(`${encodedName}/${version}`);
-      if (current?.dist?.integrity === artifact.integrity) { verified = true; break; }
-      if (current) publicationDecision(current, artifact.integrity);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
-    if (!verified) throw new Error('Publish returned, but registry integrity could not yet be verified. Re-run this same workflow run; do not bump the version again.');
+    // npm may process a successful publication for several minutes before version metadata appears.
+    await verifyRegistryIntegrity(`${encodedName}/${version}`, artifact.integrity);
     syncRelease(version, source);
     synchronized = true;
     await summary(`## Published ${pkg.name}@${version}\n\n- npm: https://www.npmjs.com/package/${pkg.name}/v/${version}\n- Git branch: master\n- Git tag: v${version}\n- Integrity: verified against the tested tarball\n\nInstall: \`npx ${pkg.name}@${version} install --user\``);

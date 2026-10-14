@@ -47,8 +47,6 @@ def _pytest_cases(native):
         flaky = any(child.tag.lower().startswith(("flaky", "rerun")) for child in node)
         cases.append({"id": f"{classname}::{name}", "status": status,
                       "flaky": flaky, "attachments": [], "results": []})
-    if not cases:
-        raise ValueError("pytest JUnit report contains no testcases")
     return cases
 
 
@@ -85,8 +83,9 @@ def _playwright_cases(native):
                 final = results[-1].get("status") if results else None
                 status = {"passed": "passed", "failed": "failed", "timedOut": "failed",
                           "skipped": "skipped", "interrupted": "blocked"}.get(final, "blocked")
-                if test.get("expectedStatus") == "failed" and test.get("status") == "expected" and final == "failed":
-                    status = "passed"
+                # A known/expected failing test is not a working product capability.
+                if test.get("expectedStatus") == "failed":
+                    status = "failed"
                 if test.get("status") == "unexpected":
                     status = "failed"
                 flaky = len(results) > 1 or test.get("status") == "flaky" or any(
@@ -101,8 +100,6 @@ def _playwright_cases(native):
 
     for suite in data["suites"]:
         walk(suite)
-    if not cases:
-        raise ValueError("Playwright JSON report contains no testcases")
     return cases
 
 
@@ -115,6 +112,16 @@ def adapt_report(framework, native, artifact_root, run_dir, runner):
     if not native.is_file() or native.stat().st_size == 0 or not artifact_root.is_dir() or not run_dir.is_dir():
         raise ValueError("native report, artifact root and run directory must exist")
     parsed = _pytest_cases(native) if framework == "pytest-junit" else _playwright_cases(native)
+    runner_errors = []
+    if framework == "playwright-json":
+        data = json.loads(native.read_text(encoding="utf-8"))
+        errors = data.get("errors", [])
+        if not isinstance(errors, list) or not all(isinstance(error, dict) for error in errors):
+            raise ValueError("invalid Playwright runner errors")
+        runner_errors = [str(error.get("message") or error.get("stack") or "Unknown runner error") for error in errors]
+    runner_status = "blocked" if not parsed else "failed" if runner_errors or any(case["status"] == "failed" for case in parsed) else "passed"
+    if not parsed and not runner_errors:
+        runner_errors = ["运行器没有发现测试用例。"]
     ids = [case["id"] for case in parsed]
     if len(ids) != len(set(ids)):
         raise ValueError("native report contains duplicate normalized test IDs")
@@ -140,7 +147,7 @@ def adapt_report(framework, native, artifact_root, run_dir, runner):
     for case in parsed:
         row = {"id": case["id"], "status": case["status"], "flaky": case["flaky"],
                "evidence": [native_rel], "interaction_evidence": [], "runtime_errors_checked": False,
-               "unexpected_errors": [], "issues": []}
+               "unexpected_errors": [], "issues": [], "checks": []}
         if framework == "playwright-json":
             for attachment in case["attachments"]:
                 if not isinstance(attachment, dict):
@@ -192,6 +199,16 @@ def adapt_report(framework, native, artifact_root, run_dir, runner):
                         row["unexpected_errors"].extend(str(value) for value in event_log["unexpected"])
                     except (ValueError, UnicodeError, TypeError) as error:
                         row["issues"].append(f"浏览器事件记录无效：{error}")
+                if name == "project-check-steps":
+                    try:
+                        log = json.loads(destination.read_text(encoding="utf-8"))
+                        if not isinstance(log, dict) or log.get("version") != 1 or not isinstance(log.get("checks"), list):
+                            raise ValueError("invalid step log")
+                        from acceptance import observed_checks
+                        row["checks"].extend(observed_checks(log["checks"]))
+                        row["interaction_evidence"].append(rel)
+                    except (ValueError, UnicodeError, TypeError) as error:
+                        row["issues"].append(f"验收动作记录无效：{error}")
             steps = [result.get("steps", []) for result in case["results"]]
             if any(steps):
                 serial += 1
@@ -201,7 +218,8 @@ def adapt_report(framework, native, artifact_root, run_dir, runner):
                 row["interaction_evidence"].append(rel)
         normalized.append(row)
     observation = {"version": 1, "framework": framework, "runner": runner,
-                   "native_report": native_rel, "cases": normalized}
+                   "native_report": native_rel, "cases": normalized,
+                   "runner_status": runner_status, "runner_errors": runner_errors}
     _write(run_dir / obs_rel, _json_bytes(observation))
     record(run_dir / obs_rel, obs_rel)
     _write(run_dir / manifest_rel, _json_bytes({"version": 1, "runner": runner, "artifacts": artifacts}))

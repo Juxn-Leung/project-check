@@ -44,6 +44,35 @@ test('AUTH-LOGOUT-001', async ({ page, phase }) => {
 
 原生 runner 报告应能核对场景 ID、执行的用例、失败信息和断言。为 `browser/e2e/visual` 保存 trace 或等价的操作与断言记录，提供失败截图；敏感信息使用测试数据并在分享前脱敏。
 
-Playwright 适配器会冻结 `project-check-browser-events` 附件，并据此设置 `runtime_errors_checked`、未解释事件和交互证据。v2 `results.json` 中不能手填 `runtime_errors_checked: true` 冒充 fixture。成功场景仍需 trace 或等价的操作与断言步骤证据；缺少事件记录或交互证据会阻塞通过。
+Playwright 适配器会冻结 `project-check-browser-events` 附件，并据此设置 `runtime_errors_checked`、未解释事件和交互证据。v2 `results.json` 中不能手填 `runtime_errors_checked: true` 冒充 fixture。成功场景需事件记录以及下述 reporter 捕获的、匹配清单的真实动作与断言；trace 作为额外诊断信息保留。
 
 视觉测试固定浏览器、操作系统、视口、字体和动态数据策略。使用已有认可基准，意外差异保持失败；不在执行入口自动更新快照。像素一致只说明与基准接近，不证明设计质量。
+
+## 可核对的动作与断言
+
+复制 `assets/playwright/project-check-reporter.ts` 到项目测试目录，放在配置的 JSON reporter **之前**：
+
+```ts
+reporter: [['./tests/project-check-reporter.ts'], ['json', { outputFile: '.project-check/runs/<run-id>/native-input.json' }]],
+```
+
+从 `phase-errors` 导入 `test` 和 `expect`。错误监听 fixture 自动执行，即使测试只使用 `{ page }` 也会收集错误。为清单 `checks` 的每一项写稳定步骤标记，在回调里执行真实动作或 `expect`：
+
+```ts
+await test.step('pc:click:save', async () => {
+  await page.getByRole('button', { name: '保存' }).click();
+});
+await test.step('pc:assert:saved', async () => {
+  await expect(page.getByText('保存成功', { exact: true })).toBeVisible();
+});
+await test.step('pc:reload:refresh', async () => { await page.reload(); });
+await test.step('pc:assert:persisted', async () => {
+  await expect(page.getByLabel('客户名称')).toHaveValue('验收客户');
+});
+```
+
+清单 checks 按顺序声明 `id`、`kind`、`description`，例如 `save/click`、`saved/assert`、`refresh/reload`、`persisted/assert`。多个映射用例时，每项还必须包含规范化的 `test` ID。只读页面场景可以显式要求 `goto` 和断言；按钮场景必须要求对应点击。
+
+reporter 从实际 `pw:api` / `expect` 子步骤生成附件。适配器核对动作种类、成功状态和顺序。把 goto 包在 click 标记中、空步骤、以普通字符串模拟 expect、省略刷新后的断言均不能满足检查。旧 trace/steps 保留用于诊断，不替代明确检查。不要用重复 check ID 重试掩盖失败。
+
+“预期失败”表示已知缺陷，不能计为产品验收通过。正常的负面场景应断言错误输入被正确拒绝，让测试自身正常通过。步骤校验不能自动判断断言是否符合业务；仍需核对已确认需求，必要时用已知错误验证断言会失败。使用测试数据，步骤描述、截图和 trace 中也不得放生产凭据。

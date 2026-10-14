@@ -22,12 +22,20 @@
     "basis": {"status": "confirmed", "source": "docs/requirements.md"},
     "preconditions": ["使用隔离测试账号"], "actions": ["点击新建", "保存", "刷新"],
     "expected": ["记录仍存在"], "coverage": "implemented", "runner": "browser",
-    "tests": ["chromium::tests/customers.spec.ts::CUSTOMERS-001"], "dependency_mode": "real"
+    "tests": ["chromium::tests/customers.spec.ts::CUSTOMERS-001"], "dependency_mode": "real",
+    "checks": [
+      {"id":"create", "kind":"click", "description":"点击新建入口"},
+      {"id":"save", "kind":"click", "description":"保存客户"},
+      {"id":"refresh", "kind":"reload", "description":"重新加载页面"},
+      {"id":"persisted", "kind":"assert", "description":"重新读取后客户仍存在"}
+    ]
   }]
 }
 ```
 
 `requirement_sources` 用 `modules` 明确来源覆盖的模块；即使来源暂未提取出需求，其变化也会阻止这些模块得到完整结论。`file` 来源使用相对项目根目录的路径和真实 SHA-256。外部或口头确认的来源使用 `{"kind":"external","modules":["customers"],"locator":"...","revision":"...","reviewed":true}`；版本与复核状态需要由执行者确认。`reviewed` 不能靠脚本自动推断。需求及场景的 `active/retired` 保留历史；退役项必须写 `retirement_reason`。有效需求只由同模块的活动场景映射。每个所选模块都需要登记有效需求；未登记、未映射、来源未复核或本次开始时文件哈希变化，报告都是 `INCOMPLETE`。
+
+浏览器场景新增有序 `checks`：稳定 `id`、`kind`、中文 `description`。多个映射用例时，每项必须带完整 `test` ID。合法 kind 为 `click/fill/selectOption/check/press/goto/reload/assert`，至少包含一项业务断言。旧清单仍可读取，缺少 checks 的浏览器场景只能得到阻塞；详见 browser.md 的 reporter 接入。
 
 原场景字段仍适用：`kind` 为 `unit/integration/browser/e2e/visual`，`basis.status` 为 `confirmed/inferred/unknown`，`coverage` 为 `implemented/missing`，`dependency_mode` 为 `real/mocked/none`。e2e 必须使用真实依赖。`tests` 写适配器规范化后的完整用例 ID；一个场景的全部映射都须执行并通过。
 
@@ -41,7 +49,7 @@ python3 <skill-dir>/scripts/project_check.py adapt --root <project> --run-dir <r
   --runner unit --framework pytest-junit --native <junit.xml> --artifact-root <runner工作目录>
 ```
 
-`snapshot` 新建唯一运行目录，冻结 `inventory.json`、`project.json`、`source-review.json` 及其 `snapshot-manifest.json` 哈希清单。必须在测试开始前执行。`adapt` 在每个 runner 结束后、下一轮运行前立即执行；它复制原生报告和 Playwright 附件，输出 `native/<runner>.*`、`observations/<runner>.json`、`evidence/<runner>.json` 及 `artifacts/<runner>/`。适配器不会覆盖已有同名产物。`--artifact-root` 是允许读取附件的目录；越界、丢失或空附件写入用例 `issues`，不会被悄悄忽略。每份 evidence 清单包含冻结文件的 SHA-256。
+`snapshot` 新建唯一运行目录，冻结 `inventory.json`、`project.json`、`source-review.json`、`workspace.json` 及其 `snapshot-manifest.json` 哈希清单。必须在测试开始前执行。`adapt` 在每个 runner 结束后、下一轮运行前立即执行；它复制原生报告和 Playwright 附件，输出 `native/<runner>.*`、`observations/<runner>.json`、`evidence/<runner>.json` 及 `artifacts/<runner>/`。适配器不会覆盖已有同名产物。`--artifact-root` 是允许读取附件的目录；越界、丢失或空附件写入用例 `issues`，不会被悄悄忽略。每份 evidence 清单包含冻结文件的 SHA-256。
 
 pytest 使用内置 JUnit XML 输出（`pytest --junitxml=<path>`），用例 ID 是 `classname::name`，参数化后缀保留。Playwright 使用 JSON reporter（例如 `PLAYWRIGHT_JSON_OUTPUT_FILE=<path> npx playwright test --reporter=json`），用例 ID 是 `projectName::file::describe标题::测试标题`；无项目名时以 `default` 代替。对照真实适配输出填写清单。适配器读取失败、跳过、重试和附件；若 pytest 使用重试插件，而 XML 无法证明每次尝试，应补充可核验的尝试记录，不能把最终绿色当作稳定通过。原生报告无法证明的业务断言、真实依赖和 UI 状态仍须审阅。
 
@@ -70,6 +78,12 @@ pytest 使用内置 JUnit XML 输出（`pytest --junitxml=<path>`），用例 ID
 }
 ```
 
-`observed_tests`、`flaky` 和浏览器 `runtime_errors_checked` 在 v2 中来自适配器，不接受手填字段代替原生观察。`assertions_checked` 仍须在核对测试断言后明确设置；`evidence` 可增加其他已冻结附件，但其路径也必须列入 evidence 清单。浏览器事件日志或截图本身不算操作轨迹；通过需要 trace、Playwright 操作步骤或明确的操作记录附件。缺少原生用例或冻结附件、哈希不符、缺少浏览器事件记录会阻塞声称通过的场景；原生失败、重试后通过或未解释的运行错误仍为失败。
+`observed_tests`、`checks`、`flaky` 和浏览器 `runtime_errors_checked` 在 v2 中来自适配器，不接受手填字段代替原生观察。`assertions_checked` 仍须在核对测试断言后明确设置；`evidence` 可增加其他已冻结附件，但其路径也必须列入 evidence 清单。浏览器事件日志或截图本身不算操作轨迹；通过需要 reporter 的 `project-check-steps` 附件中可匹配清单的实际动作与断言；trace 和普通步骤仅作为诊断记录。缺少原生用例或冻结附件、哈希不符、缺少浏览器事件记录会阻塞声称通过的场景；原生失败、重试后通过或未解释的运行错误仍为失败。
 
 报告使用运行目录里的清单快照和来源审阅快照，历史结果不会随当前需求文件变化而改写。报告只证明已登记来源和场景的覆盖，不证明未知需求不存在。退出码仍为 `0/1/2`（通过／失败或不完整／输入无效）。
+
+## 源码身份与收尾
+
+`snapshot` 自动捕获 Git 提交及已跟踪/未忽略源码的内容指纹（无 Git 时记录目录文件指纹），包含测试与验收配置，不保存源码正文。`.project-check/project.json`、`inventory.json` 和 `model.json` 即使被 Git 忽略也始终参与身份；修改它们会使旧运行过期。`.project-check/runs/`、`views/`、`changes/` 与生成的 CHECKLIST 不参与身份；Git 忽略的运行产物不参与，已跟踪源码不会因目录名为 build 而漏掉。其他影响运行的源码、配置或数据库迁移不要放进忽略规则。符号链接只记录链接身份，不跟随链接读取文件。Git 提交中包含子模块时需要单独接入。
+
+运行目录放在 `.project-check/runs/<run-id>/`。runner 的报告和附件也放在该目录或项目已忽略的测试产物目录，避免输出改变源码指纹。完成测试后以 `freshness` 检查当前源码是否仍匹配运行快照。`seal` 重新核对完整报告并绑定当前源码、结果和附件；归档使用 `finish`，具体策略与命令见 openspec.md。历史报告保持原结论，当前视图单独显示是否过期。

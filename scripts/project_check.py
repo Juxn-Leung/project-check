@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate Project Check inventories and summarize observed test evidence.
 
-This tool never starts services or executes commands stored in project.json.
+This tool does not start services or tests. finish may execute the configured OpenSpec CLI under saved policy.
 """
 import argparse
 from collections import Counter
@@ -12,6 +12,10 @@ from pathlib import Path
 import re
 import shutil
 import sys
+
+# Also supports loading this module through importlib from external test harnesses.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
 STATUSES = {"passed", "failed", "blocked", "skipped"}
@@ -119,6 +123,9 @@ def validate_inventory(data):
             require(tests and nonempty(item.get("runner")), f"{key}: implemented requires tests and runner")
         require(item.get("dependency_mode") in MODES, f"{key}: invalid dependency_mode")
         require(item["kind"] != "e2e" or item["dependency_mode"] == "real", f"{key}: e2e requires real dependencies")
+        if "checks" in item:
+            from acceptance import validate_checks
+            validate_checks(item["checks"], tests)
     return data
 
 
@@ -187,6 +194,38 @@ def select(inventory, module=None):
     scope, chosen = scope_modules(inventory, module)
     items = [x for x in inventory["scenarios"] if x["state"] == "active" and x["module"] in chosen]
     return scope, items
+
+
+def preflight(project, inventory, root, module=None, environment=None):
+    """Describe execution readiness separately from valid inventory structure."""
+    import os
+    environment = os.environ if environment is None else environment
+    scope, selected = select(inventory, module)
+    runners = records(project["runners"], "runners")
+    issues, runnable = [], []
+    for scenario in selected:
+        reasons = []
+        runner = runners.get(scenario.get("runner"), {})
+        if scenario["coverage"] != "implemented":
+            reasons.append("测试尚未实现")
+        if scenario["kind"] in {"browser", "e2e", "visual"} and not scenario.get("checks"):
+            reasons.append("旧清单缺少 checks；需要接入操作步骤 reporter")
+        required = strings(scenario.get("required_env", runner.get("required_env", project.get("required_env", []))), "required_env")
+        absent = [name for name in required if not environment.get(name)]
+        if absent:
+            reasons.append("缺少环境变量：" + ", ".join(absent))
+        for path in runner.get("required_files", []):
+            candidate = Path(path)
+            if candidate.is_absolute() or ".." in candidate.parts:
+                reasons.append("运行器依赖文件必须为项目相对路径：" + path)
+            elif not (root / candidate).is_file():
+                reasons.append("缺少运行器依赖文件：" + path)
+        if reasons:
+            issues.append({"id": scenario["id"], "reasons": reasons})
+        else:
+            runnable.append(scenario["id"])
+    return {"structure_valid": True, "scope": scope, "ready": bool(selected) and not issues,
+            "runnable_ids": runnable, "execution_gaps": issues}
 
 
 def evidence_exists(value, base):
@@ -325,6 +364,7 @@ def summarize(inventory, payload, base, module=None):
     for empty_module in sorted(chosen_modules - {x["module"] for x in selected}):
         gaps.append(f"{empty_module}: 模块尚无活动验收场景。")
     manifests, manifest_problems, observations = {}, [], {}
+    runner_results = []
     snapshot_ok = False
     observations_ok = True
     if payload["version"] == 2:
@@ -351,6 +391,13 @@ def summarize(inventory, payload, base, module=None):
             require(isinstance(observation, dict) and observation.get("version") == 1 and
                     isinstance(observation.get("cases"), list),
                     f"invalid observations: {observation_path}")
+            runner_status = observation.get("runner_status", "passed" if observation["cases"] else "blocked")
+            require(runner_status in {"passed", "failed", "blocked"}, f"invalid runner status: {observation_path}")
+            runner_errors = strings(observation.get("runner_errors", []), "runner errors")
+            runner_results.append({"id": observation.get("runner", observation_path), "status": runner_status,
+                                   "errors": runner_errors, "case_count": len(observation["cases"])})
+            if runner_status == "blocked":
+                gaps.append(f"运行器阻塞：{observation.get('runner', observation_path)}：{'；'.join(runner_errors) or '零用例'}")
             for case in observation["cases"]:
                 require(isinstance(case, dict) and nonempty(case.get("id")) and case.get("status") in STATUSES,
                         f"invalid observed case: {observation_path}")
@@ -388,7 +435,7 @@ def summarize(inventory, payload, base, module=None):
         interaction = list(strings(row.get("interaction_evidence", []), key + ": interaction_evidence"))
         errors = list(strings(row.get("unexpected_errors", []), key + ": unexpected_errors"))
         if payload["version"] == 2:
-            require(not any(field in row for field in ("observed_tests", "runtime_errors_checked", "flaky")),
+            require(not any(field in row for field in ("observed_tests", "runtime_errors_checked", "flaky", "checks")),
                     f"{key}: native observation fields must come from the adapter")
             cases = [observations[test_id] for test_id in scenario["tests"] if test_id in observations]
             observed = {x["id"]: x for x in cases}
@@ -430,6 +477,9 @@ def summarize(inventory, payload, base, module=None):
             if row.get("dependency_mode") != scenario["dependency_mode"]:
                 missing.append("实际依赖模式与场景要求不符")
             if scenario["kind"] in {"browser", "e2e", "visual"}:
+                if payload["version"] == 2:
+                    from acceptance import missing_checks
+                    missing.extend(missing_checks(scenario, observed))
                 checked = (all(x.get("runtime_errors_checked") is True for x in observed.values())
                            if payload["version"] == 2 else row.get("runtime_errors_checked") is True)
                 if not checked:
@@ -445,7 +495,12 @@ def summarize(inventory, payload, base, module=None):
         evaluated.append({"id": key, "title": scenario["title"], "status": status,
                           "reason": "；".join(reasons), "evidence": list(dict.fromkeys(evidence + interaction))})
     counts = {status: sum(x["status"] == status for x in evaluated) for status in sorted(STATUSES)}
-    outcome = "FAILED" if counts["failed"] else ("INCOMPLETE" if gaps or counts["blocked"] or counts["skipped"] else "PASSED")
+    mapped_ids = {test for scenario in selected for test in scenario["tests"]}
+    unmapped_tests = [{"id": key, "status": value["status"]} for key, value in sorted(observations.items()) if key not in mapped_ids]
+    unmapped_failures = [row["id"] for row in unmapped_tests if row["status"] == "failed"]
+    native_counts = dict(Counter(case["status"] for case in observations.values()))
+    outcome = "FAILED" if counts["failed"] or unmapped_failures or any(row["status"] == "failed" for row in runner_results) else (
+        "INCOMPLETE" if gaps or counts["blocked"] or counts["skipped"] else "PASSED")
     scenario_modules = {x["id"]: x["module"] for x in selected}
     modules = []
     global_evidence_ok = payload["version"] == 2 and snapshot_ok and observations_ok and native_ok and not manifest_problems
@@ -467,7 +522,9 @@ def summarize(inventory, payload, base, module=None):
         modules.append({"id": module_id, "outcome": module_outcome, "requirements": len(module_reqs),
                         "mapped_requirements": sum(bool(x["scenarios"]) for x in module_reqs)})
     return {"run": run, "outcome": outcome, "counts": counts, "gaps": gaps,
-            "requirements": requirement_coverage, "modules": modules, "results": evaluated}
+            "requirements": requirement_coverage, "modules": modules, "results": evaluated,
+            "native_counts": native_counts, "unmapped_tests": unmapped_tests,
+            "unmapped_failures": unmapped_failures, "runners": runner_results}
 
 
 def cell(value):
@@ -485,6 +542,15 @@ def render_report(summary):
               "| --- | --- | --- | --- | --- |"]
     for row in summary["results"]:
         lines.append("| " + " | ".join(cell(row[x]) for x in ("id", "title", "status", "reason")) + " | " + cell(", ".join(row["evidence"])) + " |")
+    lines += ["", "## 原生执行与清单外结果", "",
+              "原生用例：" + " | ".join(f"{key}: {value}" for key, value in summary.get("native_counts", {}).items())]
+    for row in summary.get("runners", []):
+        if row["status"] != "passed":
+            lines.append(f"- 运行器 {cell(row['id'])}: {row['status']} — {cell('；'.join(row['errors']))}")
+    for row in summary.get("unmapped_tests", []):
+        if row["status"] != "passed":
+            lines.append(f"- 未映射用例 {cell(row['id'])}: {row['status']}")
+    lines.append(f"未映射原生用例共 {len(summary.get('unmapped_tests', []))} 项，其中失败 {len(summary.get('unmapped_failures', []))} 项。")
     lines += ["", "## 已登记需求映射", "", "此表仅反映已登记并审阅的需求来源；不能证明未知需求不存在。", "",
               "| 需求 | 模块 | 标题 | 活动场景 | 来源已复核 |", "| --- | --- | --- | --- | --- |"]
     for row in summary["requirements"]:
@@ -526,13 +592,17 @@ def render_checklist(inventory):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("init", "validate", "checklist", "select", "snapshot", "adapt", "report"))
+    parser.add_argument("command", choices=("init", "validate", "checklist", "select", "snapshot", "adapt", "report",
+                                           "map", "baseline", "review", "seal", "finish", "freshness", "preflight"))
     parser.add_argument("--root", required=True, type=Path)
-    parser.add_argument("--module", help="Module ID or unique display name (select/report)")
+    parser.add_argument("--module", help="Module ID or unique display name (select/report/seal)")
     parser.add_argument("--inventory", type=Path, help="Frozen inventory snapshot (report only)")
     parser.add_argument("--results", type=Path, help="Observed results JSON (report only)")
     parser.add_argument("--out", type=Path, help="New report file; existing files are not overwritten")
-    parser.add_argument("--run-dir", type=Path, help="Unique run directory (snapshot/adapt)")
+    parser.add_argument("--run-dir", type=Path, help="Run directory (snapshot/adapt/map/review/seal/finish/freshness)")
+    parser.add_argument("--change-id", help="Stable change ID (baseline/review/finish)")
+    parser.add_argument("--notes", type=Path, help="Agent explanations JSON (review)")
+    parser.add_argument("--execute", action="store_true", help="Archive after validation under saved policy (finish)")
     parser.add_argument("--framework", choices=("pytest-junit", "playwright-json"), help="Native report format (adapt)")
     parser.add_argument("--native", type=Path, help="Native report file (adapt)")
     parser.add_argument("--artifact-root", type=Path, help="Allowed attachment directory (adapt)")
@@ -540,12 +610,38 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         require(args.root.is_dir(), "Project root does not exist")
-        require(not args.module or args.command in {"select", "report"}, "--module is only valid for select/report")
+        require(not args.module or args.command in {"select", "report", "seal", "preflight"}, "--module is only valid for select/report/seal/preflight")
         require(not (args.inventory or args.results or args.out) or args.command == "report", "--inventory/--results/--out are report-only")
-        require(not args.run_dir or args.command in {"snapshot", "adapt"}, "--run-dir is only valid for snapshot/adapt")
+        require(not args.run_dir or args.command in {"snapshot", "adapt", "map", "review", "seal", "finish", "freshness"},
+                "--run-dir is not supported by this command")
+        require(not args.change_id or args.command in {"baseline", "review", "finish"}, "--change-id is baseline/review/finish-only")
+        require(not args.notes or args.command == "review", "--notes is review-only")
+        require(not args.execute or args.command == "finish", "--execute is finish-only")
         require(not (args.framework or args.native or args.artifact_root or args.runner) or args.command == "adapt",
                 "adapter options are adapt-only")
         config = args.root / ".project-check"
+        if args.command in {"map", "baseline", "review"}:
+            from project_model import handle
+            result = handle(args.command, args.root, change_id=args.change_id, run_dir=args.run_dir, notes=args.notes)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
+        if args.command in {"seal", "finish", "freshness"}:
+            require(args.run_dir is not None, f"{args.command} requires --run-dir")
+            if args.command == "seal":
+                from completion import seal
+                result = seal(args.root, args.run_dir, args.module)
+            elif args.command == "finish":
+                from completion import finish
+                require(args.change_id is not None, "finish requires --change-id")
+                result = finish(args.root, args.run_dir, args.change_id, execute=args.execute)
+            else:
+                from workspace_state import current
+                entries, problems = verified_manifest("snapshot-manifest.json", args.run_dir)
+                require(not problems and artifact_ok("workspace.json", args.run_dir, entries),
+                        "Source snapshot is missing or invalid; start a new run")
+                result = current(read_json(args.run_dir / "workspace.json"), args.root)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 1 if result.get("outcome") == "BLOCKED" or result.get("current") is False else 0
         if args.command == "init":
             config.mkdir(exist_ok=True)
             assets = Path(__file__).resolve().parent.parent / "assets"
@@ -562,14 +658,19 @@ def main(argv=None):
         inventory = validate_inventory(read_json(args.inventory or config / "inventory.json"))
         if args.command not in {"report", "adapt"}:
             validate_project(read_json(config / "project.json"), inventory)
-        if args.command == "validate":
+        if args.command == "preflight":
+            result = preflight(read_json(config / "project.json"), inventory, args.root, args.module)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0 if result["ready"] else 1
+        elif args.command == "validate":
             active = [x for x in inventory["scenarios"] if x["state"] == "active"]
             review = source_review(inventory, args.root)
             chosen = {x["id"] for x in inventory["modules"]}
             mapping_gaps, requirement_coverage = requirement_gaps(inventory, chosen, review)
             print(json.dumps({"valid": True, "active_scenarios": len(active), "coverage": dict(Counter(x["coverage"] for x in active)),
                               "requirements": len(requirement_coverage), "requirement_gaps": mapping_gaps,
-                              "note": "Structure validation is not a test run."}, ensure_ascii=False))
+                              "execution_gaps": preflight(read_json(config / "project.json"), inventory, args.root)["execution_gaps"],
+                              "note": "Structure validation is not a test run; use preflight for execution readiness."}, ensure_ascii=False))
         elif args.command == "checklist":
             path = config / "CHECKLIST.md"
             path.write_text(render_checklist(inventory), encoding="utf-8")
@@ -579,7 +680,10 @@ def main(argv=None):
             print(json.dumps({"scope": scope, "selected_ids": [x["id"] for x in items]}, ensure_ascii=False, indent=2))
         elif args.command == "snapshot":
             require(args.run_dir is not None, "snapshot requires --run-dir")
+            from workspace_state import capture
+            workspace = capture(args.root)
             args.run_dir.mkdir(parents=True, exist_ok=False)
+            (args.run_dir / "workspace.json").write_text(json.dumps(workspace, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             shutil.copyfile(config / "inventory.json", args.run_dir / "inventory.json")
             shutil.copyfile(config / "project.json", args.run_dir / "project.json")
             with (args.run_dir / "source-review.json").open("x", encoding="utf-8") as file:
@@ -587,7 +691,7 @@ def main(argv=None):
                 file.write("\n")
             snapshot_artifacts = [{"path": name, "sha256": sha256(args.run_dir / name),
                                    "size": (args.run_dir / name).stat().st_size}
-                                  for name in ("inventory.json", "project.json", "source-review.json")]
+                                  for name in ("inventory.json", "project.json", "source-review.json", "workspace.json")]
             with (args.run_dir / "snapshot-manifest.json").open("x", encoding="utf-8") as file:
                 json.dump({"version": 1, "artifacts": snapshot_artifacts}, file, ensure_ascii=False, indent=2)
                 file.write("\n")

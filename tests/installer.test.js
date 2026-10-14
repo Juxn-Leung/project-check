@@ -50,6 +50,40 @@ test('existing installation and local modifications are preserved', async t => {
   assert.equal(await readFile(path, 'utf8'), 'local edits');
 });
 
+test('installation includes model tools and records resource identities', async t => {
+  const root = await temporary(t);
+  const result = await installSkill({ project: root });
+  const installed = JSON.parse(await readFile(join(result.destination, '.install-manifest.json'), 'utf8'));
+  assert.equal(installed.version, manifest.version);
+  for (const path of ['scripts/project_model.py', 'scripts/acceptance.py', 'assets/project-map.html', 'references/map.md']) {
+    assert.equal(installed.files[path].length, 64);
+    assert.ok((await readFile(join(result.destination, path))).length);
+  }
+});
+
+test('managed upgrade is idempotent and refuses local edits', async t => {
+  const root = await temporary(t);
+  const installed = await installSkill({ project: root });
+  assert.equal((await installSkill({ project: root, upgrade: true })).unchanged, true);
+  await writeFile(join(installed.destination, 'SKILL.md'), 'local changes');
+  await assert.rejects(installSkill({ project: root, upgrade: true }), /Locally modified/);
+});
+
+test('legacy upgrade requires adoption and preserves backup outside discovery directory', async t => {
+  const root = await temporary(t);
+  const installed = await installSkill({ project: root });
+  await rm(join(installed.destination, '.install-manifest.json'));
+  await writeFile(join(installed.destination, 'SKILL.md'), 'legacy modified skill');
+  await assert.rejects(installSkill({ project: root, upgrade: true }), /Legacy installation/);
+  const preview = await installSkill({ project: root, upgrade: true, adoptExisting: true, dryRun: true });
+  assert.equal(preview.dryRun, true);
+  assert.equal(await readFile(join(installed.destination, 'SKILL.md'), 'utf8'), 'legacy modified skill');
+  const upgraded = await installSkill({ project: root, upgrade: true, adoptExisting: true });
+  assert.equal(await readFile(join(upgraded.backup, 'SKILL.md'), 'utf8'), 'legacy modified skill');
+  assert.ok(upgraded.backup.includes('skill-backups'));
+  assert.deepEqual(await readdir(join(root, '.agents', 'skills')), ['project-check']);
+});
+
 test('dangling destination symlink is not replaced', async t => {
   const root = await temporary(t);
   const result = await installSkill({ project: root });
