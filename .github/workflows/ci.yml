@@ -40,11 +40,13 @@ jobs:
           python-version: '3.12'
       - name: Install isolated browser runtime
         run: |
-          npm install --prefix "$RUNNER_TEMP/project-check-runtime" --ignore-scripts --no-audit --no-fund --save-exact @playwright/test@1.63.0
+          npm install --prefix "$RUNNER_TEMP/project-check-runtime" --ignore-scripts --no-audit --no-fund --save-exact @playwright/test@1.63.0 typescript@5.9.3
           node "$RUNNER_TEMP/project-check-runtime/node_modules/@playwright/test/cli.js" install --with-deps chromium
       - name: Verify native reporter and real browser outcomes
         run: |
           export PROJECT_CHECK_PLAYWRIGHT_ROOT="$RUNNER_TEMP/project-check-runtime"
+          export PROJECT_CHECK_TYPESCRIPT_ROOT="$RUNNER_TEMP/project-check-runtime"
+          npm run test:index
           node tests/browser-integration.mjs --reporter-only --out "$RUNNER_TEMP/project-check-reporter"
           node tests/browser-integration.mjs --out "$RUNNER_TEMP/project-check-browser"
           node tests/browser-integration.mjs --map-only --out "$RUNNER_TEMP/project-check-map"

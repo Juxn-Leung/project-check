@@ -1,6 +1,6 @@
 ---
 name: project-check
-description: Help users understand AI code changes and accept them with version-bound execution evidence. Start from a task, capture its baseline, explain before/after behavior, run required scenarios and regressions, and deliver a short summary with a local detail page. Also supports 项目全貌、代码关联、建立测试、模块验收 and OpenSpec 收尾. Test-only requests do not authorize product edits.
+description: Use when users want to understand AI code changes, inspect project relationships, or verify a task against requirements with version-bound execution evidence. Supports 项目理解、改动讲解、功能验收 and OpenSpec 收尾. Test-only requests do not authorize product edits.
 ---
 
 # Project Check · 项目理解与验收
@@ -29,20 +29,21 @@ description: Help users understand AI code changes and accept them with version-
 - 项目理解、方法用途、功能/字段表或变更学习：读取 [项目地图与改动](references/map.md)。
 - 建立/维护测试：读取 [建立与维护](references/build.md) 和 [数据约定](references/contracts.md)。
 - 执行测试：读取 [执行与证据](references/run.md) 和 [数据约定](references/contracts.md)。
+- 自动串起运行、报告和封存，或恢复中断任务：读取 [统一执行与恢复](references/execution.md)。
 - 涉及页面行为：读取 [浏览器验收](references/browser.md)。
 - OpenSpec 对接、封存与归档：读取 [收尾规则](references/openspec.md)。
-- CLI 帮助：`python3 <skill-dir>/scripts/project_check.py --help`。脚本负责数据校验、证据核对、渲染和受策略约束的归档；项目语义分析、服务启动、测试编写和执行由 Codex 使用项目工具完成。
+- CLI 帮助：`python3 <skill-dir>/scripts/project_check.py --help`。`execute` 运行已配置的测试和服务，自动冻结证据并生成摘要；`index` 提取可可靠定位的语法结构。业务含义、验收断言和测试编写由 Codex 根据实际来源完成。
 
 ## 一次改动的工作方式
 
 1. 读取已有需求与用户当前目标。首次只识别本次涉及的服务、功能、入口与测试；初始化缺失配置后补齐必要资料，不把空模板当成接入完成。整理目标和可观察验收标准；只有影响实现的歧义才提问。发现 OpenSpec 时复用已确认规格和场景，保留来源，不再创建相同需求。明确需求优先于从代码推断的行为，无需用户逐条重复确认。
-2. 修改前先说明本次目标，定位入口方法、相关字段与预计影响；复用 OpenSpec 或当前任务描述，不增加重复审批。在 inventory v2 的可选 `tasks` 中登记任务 `id`、`goal`、`requirement_ids` 和 `regression_scenario_ids`，ID 与 `baseline/review --change-id` 共用。补齐方法的真实名称、职责、输入输出、关键步骤及准确源码范围，再用 `baseline` 保存工作区和关联模型。已有未提交修改属于基线。若修改已开始，明确无法还原完整起点。
+2. 修改前先说明本次目标，定位入口方法、相关字段与预计影响；复用 OpenSpec 或当前任务描述，不增加重复审批。在 inventory v2 的可选 `tasks` 中登记任务 `id`、`goal`、`requirement_ids` 和 `regression_scenario_ids`，ID 与 `baseline/review --change-id` 共用。可先运行 `index` 提取函数、参数和源码范围；阅读代码后补充职责、关键步骤及功能关联，再用 `baseline` 保存工作区和关联模型。已有未提交修改属于基线。若修改已开始，明确无法还原完整起点。
 3. 任务需求的全部活动场景自动纳入，额外回归场景与模块回归依赖按实际影响维护。用 `select --task <id>` 核对范围，再按本次目标实现。没有任务记录的独立分析或全量/模块验收继续沿用原入口。
-4. 复用已有测试；缺少本次关键测试时自动补齐，常规 Web 项目没有浏览器框架时按需接入 Playwright。重要页面操作实际点击，保存后刷新/重新查询核对持久化。模型、需求和测试准备完成后用 `preflight --task <id>` 检查环境，再 `snapshot`；每个 runner 结束立即 `adapt`，再 `report/seal --task <id>`。本次改动造成的缺陷在授权范围内修复并新建运行重跑，最多三轮；其他问题保留原因和影响，不借机扩大产品修改范围。
-5. `review --change-id <id> --run-dir <run-dir>` 默认生成“本次任务”首页。每个改动方法回答“原来做什么、现在做什么、为什么修改”，修改原因使用 `rationale` 讲解记录；行为解释与实际源码差异、原生执行证据分开。准确区分真实修改、可能影响和无法定位，保留未映射改动。源码、测试或验收输入继续变化时重新验收；旧结果保留为历史。
+4. 复用已有测试；缺少本次关键测试时自动补齐，常规 Web 项目没有浏览器框架时按需接入 Playwright。重要页面操作实际点击，保存后刷新/重新查询核对持久化。模型、需求和测试准备完成后，按 execution.md 核对断言并优先运行 `execute --task <id> --assessment <file>`，自动完成快照、执行、导入、报告、封存和视图。无法适配托管运行器时沿用 `preflight → snapshot → 项目测试命令 → adapt → report/seal`。本次改动造成的缺陷在授权范围内修复并新建运行重跑，最多三轮；其他问题保留原因和影响，不借机扩大产品修改范围。
+5. `review --change-id <id> --run-dir <run-dir>` 默认生成“本次任务”首页。先为关键功能提供有来源的用户行为前后对比图（feature behavior 的 comparison，格式见 map.md），让使用者先看到操作和结果变化，再展开方法与代码。每个改动方法回答“原来做什么、现在做什么、为什么修改”，修改原因使用 `rationale` 讲解记录；行为解释与实际源码差异、原生执行证据分开。准确区分真实修改、可能影响和无法定位，保留未映射改动。复核关联方法在当前流程中的用途，即使方法源码没变也更新已经不准确的说明。用 `unknown` 讲解记录列出实际未执行的业务或环境边界；已解决的过程问题放在 `deviation`，避免混入待验收清单。源码、测试或验收输入继续变化时重新验收；旧结果保留为历史。
 6. 归档使用 `finish`。事先约定自动归档且验证满足条件时不重复询问；明确要求的人工签收仍须有真实确认。仅“用户尚未看讲解”不阻塞归档。
 
-GitNexus、已有浏览器工具及 OpenSpec 按需复用；缺少这些工具不阻止基本任务流程。外部图谱用于辅助定位，不能代替真实验收证据。服务启动与测试执行仍由 Codex 使用项目工具编排。
+GitNexus、已有浏览器工具及 OpenSpec 按需复用；缺少这些工具不阻止基本任务流程。外部图谱与静态索引用于辅助定位；未解析调用、未支持语言和待复核说明必须保留。自动索引不生成业务需求或宣称完成覆盖。
 
 ## 必须保留的判断边界
 
@@ -59,6 +60,6 @@ GitNexus、已有浏览器工具及 OpenSpec 按需复用；缺少这些工具�
 
 项目内 `.project-check/inventory.json` 保存需求到场景的关联，`model.json` 保存功能到代码/数据的关联；需求正文继续来自 OpenSpec 或原文档。HTML、清单、报告均为生成视图。测试代码留在项目已有目录，运行历史不可覆盖。
 
-结束时先在聊天给出三项简短摘要：**改了什么**（原来/现在/原因）、**影响哪里**（相关功能、数据与待确认项）、**验收结果**（实际操作、关联回归、未验证范围与版本）。结论使用“已通过 / 未通过 / 待验收”，阻塞、跳过、缺证据和过期结果归为待验收，并说明具体原因。附可点击本地详情页，按需展开方法、关系图与证据；不自动打开页面。
+结束时先在聊天给出三项简短摘要：**改了什么**（原来/现在/原因）、**影响哪里**（相关功能、数据与待确认项）、**验收结果**（实际操作、关联回归、未验证范围与版本）。使用行为描述，例如“保存后刷新仍能看到客户”，不要只列函数名和测试数量。结论使用“已通过 / 未通过 / 待验收”，阻塞、跳过、缺证据和过期结果归为待验收，并说明具体原因。托管执行生成 `SUMMARY.md`；附可点击本地详情页，按需展开方法、关系图与证据，不自动打开页面。
 
 任务通过仅代表任务范围，功能/模块仍按各自完整范围判断。需要强制合并检查时由 CI 调用相同工具；skill 本身不保证模型每次都会遵循所有步骤。

@@ -1,0 +1,20 @@
+Isolated browser integration evidence: /private/var/folders/27/x9z83zz94gg487yqzz6f7q7m0000gn/T/project-check-browser-Ckdcy3
+
+Running 10 tests using 1 worker
+
+(node:94020) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/10] [chromium] › tests/browser/map.spec.ts:47:1 › map-focus-and-method-navigation
+[2/10] [chromium] › tests/browser/map.spec.ts:64:1 › map-before-after-preserves-retargeted-and-removed-relations
+[3/10] [chromium] › tests/browser/map.spec.ts:76:1 › map-code-diff-and-unverified-tests
+[4/10] [chromium] › tests/browser/map.spec.ts:86:1 › map-tables-search-and-field-location
+[5/10] [chromium] › tests/browser/map.spec.ts:100:1 › map-overview-keyboard-and-narrow-screen
+[6/10] [chromium] › tests/browser/map.spec.ts:142:1 › task-home-and-method-before-after
+[7/10] [chromium] › tests/browser/map.spec.ts:167:1 › task-evidence-link-and-unverified-range
+[8/10] [chromium] › tests/browser/map.spec.ts:184:1 › task-behavior-diagram-shows-user-outcomes-before-code-on-desktop-and-mobile
+[9/10] [chromium] › tests/browser/map.spec.ts:219:1 › task-pending-and-failed-states-preserve-raw-result
+[10/10] [chromium] › tests/browser/map.spec.ts:249:1 › task-mobile-keyboard-and-empty-changes
+  10 passed (6.5s)
+Task and map UI: 10 interaction regressions passed

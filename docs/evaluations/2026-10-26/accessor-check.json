@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "raw_index_unchanged_after_two_merges": true,
+  "model_nodes": 3,
+  "getter": {
+    "symbol": "ValueBox.value [get]",
+    "id": "symbol:9434e636e7655a767dd4",
+    "parameters": [],
+    "line": 3
+  },
+  "setter": {
+    "symbol": "ValueBox.value [set]",
+    "id": "symbol:4f9934d88b99073ba31a",
+    "parameters": [
+      "next"
+    ],
+    "line": 4
+  },
+  "model_source_and_input_objects_independent": true,
+  "parser_errors": [],
+  "cli_index_nodes_equal_raw_before_merge": true,
+  "cli_model_independent_getter_and_setter": true,
+  "fix_file_sha256": {
+    "index_typescript.mjs": "937ab05a6d82614ada5a3b2d3606ec136bdbb7140599b99db477ec629a8d950f",
+    "source_index.py": "87643b131a9158ce0310fe1771547ac6c80381041717e2581ef17b3826f49d99"
+  }
+}

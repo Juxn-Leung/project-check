@@ -1,0 +1,66 @@
+{
+  "task": "Click complex hello --shout isolated behavior evaluation",
+  "skill_commit": "470a2c4",
+  "skill_snapshot": "/tmp/project-check-skill-v040.olqiIm",
+  "skill_script_sha256": "0e45762eb7c79a9b94261c6adfd32ec747393d21e31a9f86e47d7e76877b338d",
+  "started_at": "2026-10-26T06:40:09+00:00",
+  "finished_at": "2026-10-26T06:47:34.986280+00:00",
+  "user_interventions": 0,
+  "parent_scope_clarifications": 1,
+  "parent_version_pinning_messages": 1,
+  "project_path": "/tmp/project-check-click-eval.yjfgZy/complex",
+  "upstream_commit": "2247b35ea1c47c727d7a06e51fa280e12a863ff6",
+  "local_baseline_commit": "097ab2f31edaa4fc63bbb07efc73a2896555acea",
+  "final_source_fingerprint": "d565c45d429ee9f5deba783a6f98667cacd6d5961a4c4176d656e9bfe3b6a529",
+  "outcome": "PASSED",
+  "baseline_complete": true,
+  "explanation_complete": true,
+  "evidence_complete": true,
+  "detail_page_generated_and_static_checked": true,
+  "detail_page_browser_opened": false,
+  "modules": 2,
+  "requirements": 6,
+  "scenarios": 7,
+  "native_cases": 8,
+  "runner_attempts": [
+    {
+      "run": "red-20261026",
+      "passed": 3,
+      "failed": 5,
+      "reason": "Upstream has no hello. Initial JUnit scenario ID prefix also mismatched; raw evidence preserved."
+    },
+    {
+      "run": "green-20261026",
+      "passed": 7,
+      "failed": 1,
+      "reason": "Test expected old Click punctuation for unknown option. Correctly rejected, but formatting assumption invalid."
+    },
+    {
+      "run": "final-20261026",
+      "passed": 8,
+      "failed": 0,
+      "reason": "Final independent run; all mapped scenarios passed."
+    }
+  ],
+  "final_scenario_counts": {
+    "passed": 7,
+    "failed": 0,
+    "blocked": 0,
+    "skipped": 0
+  },
+  "logged_commands": 38,
+  "product_files_changed": [
+    "complex/commands/cmd_hello.py"
+  ],
+  "other_source_changes": [
+    "tests/test_cli.py",
+    ".project-check/inventory.json",
+    ".project-check/model.json"
+  ],
+  "limitations": [
+    "Only local Python 3.13.7 / Click 8.5.0 / pytest 9.1.1 exercised.",
+    "CLI integration through real subprocesses, no mock. No full upstream Click suite.",
+    "Detail HTML statically checked, not automatically opened as prohibited by skill.",
+    "No pre-existing hello default exists in actual upstream; scope was explicitly clarified to add plugin."
+  ]
+}

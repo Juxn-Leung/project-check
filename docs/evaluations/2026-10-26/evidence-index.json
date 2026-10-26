@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "note": "原始自生成评测记录的逐字节副本；其中绝对路径指当日隔离项目。原生测试及大体积trace留在原隔离目录。",
+  "artifacts": [
+    {
+      "file": "baseline-cli.json",
+      "source": "/tmp/project-check-click-eval.yjfgZy/EVALUATION.json",
+      "sha256": "5f16ada7db287ecc47a3fbfbcd6b72513f916539533389bac368b12e6053af59",
+      "bytes": 2328
+    },
+    {
+      "file": "baseline-backend.json",
+      "source": "/tmp/project-check-flask-eval.VNdtZP/EVALUATION.json",
+      "sha256": "a5fdb8b69f6c0939ad8c9abf1013f7af21dda551b1174aae18e6947e4a52214b",
+      "bytes": 3516
+    },
+    {
+      "file": "baseline-web.json",
+      "source": "/tmp/project-check-eval-web.GPL9UX/metrics.json",
+      "sha256": "e0cda2a6acfe3226b7ba7be920683a5e4c7f790c2ae41929542010329837739a",
+      "bytes": 2969
+    },
+    {
+      "file": "executor-cli.json",
+      "source": "/tmp/project-check-executor-eval.DyLhlf/EXECUTOR_EVALUATION.json",
+      "sha256": "918c5229d88184ae95f598561aa3cf91b6a265057d2064518f0e81bc568d307f",
+      "bytes": 4061
+    },
+    {
+      "file": "candidate-cli.json",
+      "source": "/tmp/project-check-candidate-recheck.fQ89Qx/CANDIDATE_RECHECK.json",
+      "sha256": "95b01afea60c19be453e8c3546f4dd31de2e1d136e0297346e645beedaa64662",
+      "bytes": 2144
+    },
+    {
+      "file": "service-cleanup.json",
+      "source": "/tmp/project-check-cleanup-recheck.NsXIQH/cleanup-recheck.json",
+      "sha256": "eb563c7daf4ae92ffd460fe234bb37c717367ed6f273542bba3d0e478502774a",
+      "bytes": 1882
+    },
+    {
+      "file": "candidate-backend.json",
+      "source": "/tmp/project-check-flask-summary-fix.AQeRio/EVALUATION.json",
+      "sha256": "c1f027c4587e2525ee03c5a762d7336ffd20cc671ffdbe1ec9d15c496d313fb9",
+      "bytes": 2124
+    },
+    {
+      "file": "backend-boundaries.json",
+      "source": "/tmp/project-check-flask-summary-fix.AQeRio/BOUNDARY-METRICS.json",
+      "sha256": "ae06ec1d59eb4b9906965e31912cbd7f99f80d1a4078ef5226b232751be0bec2",
+      "bytes": 1539
+    },
+    {
+      "file": "candidate-web.json",
+      "source": "/tmp/project-check-candidate-web.frKzLa/metrics.json",
+      "sha256": "1faab66ad12e9b2b496cea3dd04dbd51acb8051f0b6804e3e8c31f69531a4d16",
+      "bytes": 2573
+    },
+    {
+      "file": "final-web.json",
+      "source": "/tmp/project-check-final-web.mOaj2X/metrics.json",
+      "sha256": "989c01684ca6ddce42378650741b054e0c3cc40e8031743799cad2d5e1c63959",
+      "bytes": 2410
+    },
+    {
+      "file": "accessor-check.json",
+      "source": "/tmp/project-check-final-web.mOaj2X/accessor-check.json",
+      "sha256": "4aa3fe65d3bbbc0ea74b6737b81276bed0db898281c22a3bc90f9b5e1c648cca",
+      "bytes": 766
+    },
+    {
+      "file": "backend-summary.md",
+      "source": "/tmp/project-check-flask-summary-fix.AQeRio/BOUNDARY-SUMMARY-AS-READ.md",
+      "sha256": "6bb82556e37052797dd1e819d271f5f228598e4a006c5db104d17f8ba630f829",
+      "bytes": 3298
+    },
+    {
+      "file": "web-summary.md",
+      "source": "/tmp/project-check-final-web.mOaj2X/app/.project-check/runs/20261026T073107Z-59588432/SUMMARY.md",
+      "sha256": "e98ff427caa3263f1b141854e9e2f9de2694fae28cf1fd1068565a250aec52ab",
+      "bytes": 4544
+    },
+    {
+      "file": "comparison-desktop.png",
+      "source": "/tmp/project-check-flask-summary-fix.AQeRio/comparison-desktop-1280x800.png",
+      "sha256": "222cd8456c14c57e861329521701e95cda0900a9951c772e241dd1f31517d798",
+      "bytes": 116131
+    },
+    {
+      "file": "comparison-mobile.png",
+      "source": "/tmp/project-check-flask-summary-fix.AQeRio/comparison-mobile-top.png",
+      "sha256": "d8b73fce1a755fde741eb8792ad7129ea61604ca2bff33078fdaeffb02f5fc71",
+      "bytes": 279995
+    },
+    {
+      "file": "comparison-figure.png",
+      "source": "/tmp/project-check-flask-summary-fix.AQeRio/comparison-desktop-figure.png",
+      "sha256": "e8e1c37ac9732f4d08266d35243c229b039e0f1de564d889507636843ee3aaf6",
+      "bytes": 54488
+    },
+    {
+      "file": "comparison-check.json",
+      "source": "/tmp/project-check-flask-summary-fix.AQeRio/COMPARISON-TOP-CHROME-CHECK.json",
+      "sha256": "ec7102e992b1c9cc154f52116c229b6a3fcc85c4491a4bef1970d809ab287e11",
+      "bytes": 4628
+    },
+    {
+      "file": "comparison-metrics.json",
+      "source": "/tmp/project-check-flask-summary-fix.AQeRio/COMPARISON-TOP-METRICS.json",
+      "sha256": "1008a302f2dfaeba642f66123f4fbb7300fde083ffc948f16439881a6ba27f19",
+      "bytes": 1059
+    },
+    {
+      "file": "comparison-basis.json",
+      "source": "/tmp/project-check-flask-summary-fix.AQeRio/COMPARISON-BASIS.json",
+      "sha256": "29cba702c1f3c92ceccc27d342dc1aee1e74f98f5ed9a88368ae9992cdb29c94",
+      "bytes": 2552
+    },
+    {
+      "file": "comparison-notes.json",
+      "source": "/tmp/project-check-flask-summary-fix.AQeRio/comparison-notes.json",
+      "sha256": "ec8b264d2c766448196a38dc267b990a14825860c85b3c6b3caeee13b43ca4a8",
+      "bytes": 3463
+    }
+  ]
+}

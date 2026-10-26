@@ -200,6 +200,17 @@ def method_changes(root, baseline, model, after):
                                                         new['text'].splitlines(keepends=True), autojunk=False).get_opcodes()
         return file_ops[path]
 
+    def identical_file(source):
+        path = source['path']
+        old = baseline['workspace']['files'].get(path, {})
+        new = after['files'].get(path, {})
+        if old.get('kind') != 'file' or old != new or source.get('sha256') != old.get('sha256'):
+            return False
+        # A present but tampered/unsafe saved body must still be reported.
+        if path in old_records and 'text' not in checked_record(path, old_records[path], baseline['workspace']):
+            return False
+        return 'text' in checked_record(path, new_records.get(path, {}), after)
+
     rows = []
     order = list(new_nodes) + [key for key in old_nodes if key not in new_nodes]
     for key in order:
@@ -219,6 +230,10 @@ def method_changes(root, baseline, model, after):
             else:
                 for old_source, new_source in zip(old_sorted, new_sorted):
                     path = old_source['path']
+                    if old_source == new_source and identical_file(old_source):
+                        states.append('unchanged')
+                        row['reasons'].append(path + '：整个来源文件与任务基线内容一致，未发生源码编辑。')
+                        continue
                     old_range = mapped_range(old_source, old_records.get(path, {}), baseline['workspace'])
                     new_range = mapped_range(new_source, new_records.get(path, {}), after)
                     if old_range['state'] != 'available' or new_range['state'] != 'available':
@@ -250,6 +265,10 @@ def method_changes(root, baseline, model, after):
                 row['reasons'].append('节点只有模型记录，缺少可核对的源码区间。')
             for source in source_rows:
                 path = source['path']
+                if identical_file(source):
+                    states.append('unchanged')
+                    row['reasons'].append(path + '：仅增加或移除模型记录；来源文件与任务基线内容一致。')
+                    continue
                 part = mapped_range(source, new_records.get(path, {}) if adding else old_records.get(path, {}),
                                     after if adding else baseline['workspace'])
                 ops = operations(path)
@@ -588,6 +607,16 @@ def validate_notes(value, models):
         need(note.get('target') in ids[note['target_type']], 'notes: unknown target')
         need(note.get('kind') in {'behavior', 'rationale', 'learning', 'deviation', 'unknown'} and nonempty(note.get('text')),
              'notes: invalid kind/text')
+        if 'comparison' in note:
+            comparison = note['comparison']
+            need(note['target_type'] == 'feature' and note['kind'] == 'behavior',
+                 'notes: comparison requires a feature behavior note')
+            need(isinstance(comparison, dict) and nonempty(comparison.get('title')),
+                 'notes: comparison requires an operation title')
+            for phase in ('before', 'after'):
+                steps = comparison.get(phase)
+                need(isinstance(steps, list) and 1 <= len(steps) <= 6 and all(nonempty(s) for s in steps),
+                     'notes: comparison before/after require 1–6 observed behavior steps')
         result.append({**note, 'provenance': 'agent-authored', 'verified': False})
     return result
 

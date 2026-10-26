@@ -16,6 +16,7 @@ const payload = [
   'references/build.md', 'references/run.md', 'references/browser.md', 'references/contracts.md',
   'scripts/project_check.py', 'scripts/report_adapters.py',
   'scripts/acceptance.py', 'scripts/project_model.py', 'scripts/workspace_state.py', 'scripts/completion.py',
+  'scripts/execution.py', 'scripts/source_index.py', 'scripts/index_typescript.mjs', 'references/execution.md',
   'references/map.md', 'references/openspec.md',
 ];
 const installationManifest = '.install-manifest.json';
@@ -153,7 +154,7 @@ export async function main(args) {
   const result = await installSkill(options);
   console.log(`${result.unchanged ? 'Already current:' : result.dryRun ? 'Would install' : 'Installed'} ${result.files} Skill files (${result.version}) at ${result.destination}`);
   if (result.backup) console.log(`Previous installation preserved at ${result.backup}`);
-  if (!result.dryRun) console.log('In the target project’s Codex chat: use $project-check build.');
+  if (!result.dryRun) console.log('In the target project’s Codex chat: use $project-check to change a feature, explain it, and verify it.');
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(await realpath(process.argv[1])).href) {

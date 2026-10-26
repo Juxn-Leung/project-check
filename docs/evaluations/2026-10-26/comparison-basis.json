@@ -1,0 +1,27 @@
+{
+  "baseline_hash": "c49c5f6e3db32d74bfac13633fd328ec904cb7159d76ca78f6956432076c1fd7",
+  "baseline_update": "def update(id):\n    \"\"\"Update a post if the current user is the author.\"\"\"\n    post = get_post(id)\n\n    if request.method == \"POST\":\n        title = request.form[\"title\"]\n        body = request.form[\"body\"]\n        error = None\n\n        if not title:\n            error = \"Title is required.\"\n\n        if error is not None:\n            flash(error)\n        else:\n            db = get_db()\n            db.execute(\n                \"UPDATE post SET title = ?, body = ? WHERE id = ?\", (title, body, id)\n            )\n            db.commit()\n            return redirect(url_for(\"blog.index\"))\n\n    return render_template(\"blog/update.html\", post=post)",
+  "current_hash": "b826f7cb4b31076aee46a2e4fc0bdbec407dd5831f6847e0064d177c9fbd48ed",
+  "current_update": "def update(id):\n    \"\"\"Update a post if the current user is the author.\"\"\"\n    post = get_post(id)\n\n    if request.method == \"POST\":\n        title = request.form[\"title\"]\n        body = request.form[\"body\"]\n        error = None\n\n        if not title:\n            error = \"Title is required.\"\n        elif len(title) > 200:\n            error = \"Title must be 200 characters or fewer.\"\n\n        if error is not None:\n            flash(error)\n        else:\n            db = get_db()\n            db.execute(\n                \"UPDATE post SET title = ?, body = ? WHERE id = ?\", (title, body, id)\n            )\n            db.commit()\n            return redirect(url_for(\"blog.index\"))\n\n    return render_template(\"blog/update.html\", post=post)",
+  "native_run": "/private/tmp/project-check-flask-summary-fix.AQeRio/tutorial/.project-check/runs/20261026T072304Z-10603376",
+  "native_test_ids": [
+    "tests.test_title_length::test_TITLE_REJECT[ascii_201-update]",
+    "chromium::title.spec.ts::UI-EDIT"
+  ],
+  "native_status": "passed",
+  "comparison": {
+    "title": "编辑文章：提交201个字符的标题",
+    "before": [
+      "打开自己文章的编辑页",
+      "输入201个字符的标题，并修改正文",
+      "点击保存，旧校验只检查标题非空",
+      "超长标题与新正文写入数据库，返回列表"
+    ],
+    "after": [
+      "打开同一篇文章的编辑页",
+      "输入同样的201个字符标题，并修改正文",
+      "点击保存，显示标题过长错误并停留编辑页",
+      "数据库中的原标题和原正文均未改变"
+    ]
+  }
+}

@@ -14,7 +14,8 @@
     "assets/*.html",
     "assets/playwright/*",
     "references/*.md",
-    "scripts/*.py"
+    "scripts/*.py",
+    "scripts/index_typescript.mjs"
   ],
   "engines": {
     "node": ">=20"
@@ -25,7 +26,8 @@
     "prepublishOnly": "npm test && npm run test:python",
     "test:browser": "node tests/browser-integration.mjs",
     "test:reporter": "node tests/browser-integration.mjs --reporter-only",
-    "test:map": "node tests/browser-integration.mjs --map-only"
+    "test:map": "node tests/browser-integration.mjs --map-only",
+    "test:index": "node tests/index-integration.mjs"
   },
   "repository": {
     "type": "git",

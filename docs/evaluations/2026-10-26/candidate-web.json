@@ -1,0 +1,51 @@
+{
+  "started_at": "2026-10-26T07:14:21+00:00",
+  "finished_at": "2026-10-26T07:23:07.105967+00:00",
+  "elapsed_seconds": 526.105967,
+  "project_path": "/tmp/project-check-candidate-web.frKzLa/app",
+  "skill_snapshot": "/tmp/project-check-candidate-web.frKzLa/skill",
+  "skill_snapshot_manifest": "/tmp/project-check-candidate-web.frKzLa/skill-manifest.json",
+  "previous_artifacts_retained": [
+    "/tmp/project-check-eval-web.GPL9UX",
+    "/tmp/project-check-vnext-web.lDFAFj"
+  ],
+  "main_repository_modified": false,
+  "product_source_unchanged": true,
+  "user_questions": 0,
+  "user_interventions": 0,
+  "index_extracted_nodes": 56,
+  "index_merged_nodes": 59,
+  "previous_semantics_preserved": true,
+  "constructors_extracted": 4,
+  "default_index_excludes_existing_dist_and_tests": true,
+  "unchanged_helpers_classified_unchanged": true,
+  "summary_lines": 40,
+  "summary_confirmed_change_bullets": 8,
+  "summary_generic_unreviewed_change_bullets": 0,
+  "summary_three_answers": {
+    "what_changed": "足够：新 Clear all，确认才删除，取消保留；删全量含隐藏项；localStorage 及刷新后的唯一 ID。",
+    "what_is_affected": "基本足够：明确清空全部待办和原有待办交互，给出清空集合和新增更新的用途。仍有一处原有模型文案时态含混。",
+    "what_is_unverified": "足够：明确仅 Chromium 1280x800，未验其他浏览器、跨标签页、localStorage 禁用/损坏，且非整项目验收。"
+  },
+  "summary_remaining_limitations": [
+    "Model.removeAll 的原有模型说明仍写“原有方法尚无界面入口”，放在当前影响段容易误读；renderer 保留了旧语义，需维护模型说明。",
+    "摘要仍以方法名为条目，技术词较多；已不再充斥未知索引节点。",
+    "版本行仍是 Git SHA/run ID，dirty workspace 内容指纹需进详情页。"
+  ],
+  "execute_outcome": "PASSED",
+  "native_passed": 6,
+  "step_count": 48,
+  "runtime_errors": 0,
+  "source_fingerprint": "f56de2b0971391444a0bef6168d6607f1935e9fe9e27cf3751c41296e64f03e4",
+  "manifest_hashes_verified": 66,
+  "resume_no_repeated_commands": true,
+  "managed_service_stopped": true,
+  "old_evidence_files_preserved": 218,
+  "ui_uncertain_nodes_separately_grouped": 41,
+  "ui_task_screenshot": "/tmp/project-check-candidate-web.frKzLa/ui-task-top.png",
+  "ui_uncertainty_screenshot": "/tmp/project-check-candidate-web.frKzLa/ui-unresolved-marker.png",
+  "ui_runtime_errors": 0,
+  "cli_failures": 0,
+  "auxiliary_capture_selector_failures": 1,
+  "accessor_index_correct": false
+}

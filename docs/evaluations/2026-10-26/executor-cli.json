@@ -1,0 +1,98 @@
+{
+  "started_at": "2026-10-26T07:05:13+00:00",
+  "finished_at": "2026-10-26T07:11:16.723717+00:00",
+  "base_skill_commit": "470a2c48550faca8906628eac604290ee9442686",
+  "skill_version": "uncommitted vNext snapshot, per skill-manifest.json",
+  "executor_sha256": "75240c98facf49286a5105b39c2423ba8a0a2099490b58b3ea5db9eb36293e86",
+  "source_index_sha256": "93ae51ccfff022087ccefa80c68f0ffbf87b81939a76a96b61ca4ff49c5a3fb3",
+  "project_path": "/tmp/project-check-executor-eval.DyLhlf/complex",
+  "fault_project_path": "/tmp/project-check-executor-eval.DyLhlf/fault-complex",
+  "original_project_preserved": "/tmp/project-check-click-eval.yjfgZy/complex",
+  "user_interventions": 0,
+  "logged_process_commands": 16,
+  "normal_path_commands": 6,
+  "normal_execute_wall_seconds": 3.091656,
+  "resume_wall_seconds": 0.420304,
+  "normal_scenarios_passed": 7,
+  "normal_native_tests_passed": 8,
+  "normal_outcome": "PASSED",
+  "resume_command_receipts_and_logs_unchanged": true,
+  "index": {
+    "nodes": 17,
+    "edges": 7,
+    "unresolved_calls": 32,
+    "parse_errors": 0,
+    "source_range_duplicates": 0
+  },
+  "summary_sufficiency": "partial: real hello behavior and rationale present, but unresolved indexed methods clutter changes; platform/full-suite limits and original absence not surfaced from feature notes.",
+  "fault_checks": {
+    "cleanup_exit_7": {
+      "outcome": "INCOMPLETE",
+      "execute_exit_code": 1,
+      "all_seven_scenarios_passed": true,
+      "resume_still_incomplete": true,
+      "seal_present": false
+    },
+    "green_xml_process_exit_3": {
+      "outcome": "FAILED",
+      "execute_exit_code": 1,
+      "native_tests_passed": 8,
+      "scenarios_failed": 7,
+      "seal_present": false
+    },
+    "stale_source_resume": {
+      "execute_exit_code": 2,
+      "message": "Source changed since execution snapshot"
+    },
+    "corrupt_native_resume": {
+      "execute_exit_code": 2,
+      "message": "Refusing to overwrite frozen artifact: REPORT.md",
+      "diagnostic_quality": "safe rejection, indirect root cause"
+    },
+    "live_sigint": {
+      "argv": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+        "/tmp/project-check-executor-eval.DyLhlf/skill/scripts/project_check.py",
+        "execute",
+        "--root",
+        "/tmp/project-check-executor-eval.DyLhlf/fault-complex",
+        "--task",
+        "hello-shout",
+        "--run-dir",
+        "/tmp/project-check-executor-eval.DyLhlf/fault-complex/.project-check/runs/interrupted-live",
+        "--assessment",
+        "/tmp/project-check-executor-eval.DyLhlf/fault-complex/.project-check/assessment.json"
+      ],
+      "started_at": "2026-10-26T07:09:01.291167+00:00",
+      "finished_at": "2026-10-26T07:09:02.116925+00:00",
+      "executor_exit_code": -2,
+      "interrupted_child_pid": 81424,
+      "child_alive_after_interrupt": false,
+      "receipt_exists": false,
+      "summary_exists": false,
+      "log": "/tmp/project-check-executor-eval.DyLhlf/interrupt-execute.log"
+    },
+    "interrupted_resume": {
+      "execute_exit_code": 2,
+      "message": "Command interrupted with unknown outcome: cli",
+      "reran": false
+    }
+  },
+  "manual_configuration_required": [
+    "runner framework=pytest-junit",
+    "runner native_report={run_dir}/raw/cli.xml",
+    "argv --junitxml={native_report}",
+    "optional bounded timeout_seconds=30",
+    "assessment.json: seven scenario mappings, source SHA-256, reviewed assertions and real dependency mode"
+  ],
+  "documentation_friction": [
+    "CLI --help still says tool does not start services or tests despite execute capability.",
+    "Option help lists old supported commands and omits execute for module/run-dir/notes.",
+    "Corrupted native evidence rejected via frozen REPORT.md conflict instead of explicit hash mismatch."
+  ],
+  "limitations": [
+    "Only current Python/Click local CLI configuration exercised.",
+    "Real SIGINT tested; SIGKILL/SIGTERM, service processes and production-like databases were not tested.",
+    "Detail HTML not opened automatically."
+  ]
+}

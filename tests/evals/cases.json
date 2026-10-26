@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "purpose": "在隔离项目和新上下文中观察 Skill 实际行为；不是只检查文件格式。",
+  "cases": [
+    {
+      "id": "web-clear-all",
+      "repository": "https://github.com/tastejs/todomvc.git",
+      "commit": "ff43b02e59dfa604386bb382034b2cd07c2bcd8a",
+      "project_path": "examples/javascript-es6",
+      "prompt": "使用 project-check 给这个待办应用增加 Clear all 入口。点击后需要确认；取消保留全部待办，确认删除全部待办，包括当前筛选隐藏的项目，刷新后仍保持删除。保留原有新增、切换完成状态、筛选和清除已完成操作。完成实现、讲解和真实浏览器验收。",
+      "observables": ["真实点击入口，不能 force click 绕过遮挡", "取消保留数据", "确认删除全量，包括筛选隐藏项", "刷新验证持久化", "原有主要操作回归", "首轮失败、修复和最终运行分别保存"],
+      "known_context": "固定上游路径为 javascript-es6。上游存储仅在内存；满足刷新要求需要处理真实持久化，不能直接假定已经具备。"
+    },
+    {
+      "id": "backend-title-limit",
+      "repository": "https://github.com/pallets/flask.git",
+      "commit": "d086db856be187255b8ec61ef409357393020f32",
+      "project_path": "examples/tutorial",
+      "prompt": "使用 project-check 限制文章创建和编辑标题最多 200 个字符，沿用 Python len 的 Unicode 码点计数。超长时明确提示且完全不写入，正常保存、空标题校验和作者权限保持原行为。完成实现、讲解与验收，浏览器保存后刷新检查真实数据库内容。",
+      "observables": ["1/199/200/201 边界", "创建和编辑均有服务端校验", "错误路径不写入标题或正文", "原有测试回归", "真实浏览器创建/编辑并刷新", "ASCII、中文和单码点 emoji；未测字符组合明确列出"],
+      "known_context": "固定上游默认重定向为 303，不能以测试作者熟悉的旧版本行为覆盖当前实现。原始评测目标为最多200字符，复测在此明确已采用的码点口径。"
+    },
+    {
+      "id": "cli-hello-shout",
+      "repository": "https://github.com/pallets/click.git",
+      "commit": "2247b35ea1c47c727d7a06e51fa280e12a863ff6",
+      "project_path": "examples/complex",
+      "prompt": "使用 project-check 给此插件式 CLI 新增 hello 命令。默认输出 Hello, World!，传 --shout 输出 HELLO, WORLD!，支持帮助并拒绝未知参数；保留 init/status 和顶层帮助。完成实现、讲解与真实子进程验收。",
+      "observables": ["真实子进程 stdout/stderr/退出码", "默认与 shout 输出", "hello 帮助", "未知参数被拒绝", "原有 init/status 与顶层帮助回归"],
+      "known_context": "该固定上游不存在 hello。原评测中协调者澄清新增插件范围1次；复测提示已包含这项决策，不能宣称完全同条件的零提示比较。"
+    }
+  ]
+}

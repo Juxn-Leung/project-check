@@ -1,0 +1,15 @@
+Reporter contract evidence: /private/var/folders/27/x9z83zz94gg487yqzz6f7q7m0000gn/T/project-check-browser-nkyXJl
+
+Running 5 tests using 1 worker
+
+(node:89774) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/5] [chromium] › tests/browser/reporter.spec.ts:5:1 › actual-expect
+[2/5] [chromium] › tests/browser/reporter.spec.ts:9:1 › empty-wrapper
+[3/5] [chromium] › tests/browser/reporter.spec.ts:13:1 › fake-click-wrapper
+[4/5] [chromium] › tests/browser/reporter.spec.ts:17:1 › expected-failure
+[5/5] [chromium] › tests/browser/reporter.spec.ts:22:1 › reversed-assertions
+  5 passed (438ms)
+No-browser reporter integration: 5 contracts verified. Browser acceptance remains unexecuted. Evidence: /private/var/folders/27/x9z83zz94gg487yqzz6f7q7m0000gn/T/project-check-browser-nkyXJl

@@ -1,0 +1,65 @@
+{
+  "started_at": "2026-10-26T07:28:59+00:00",
+  "finished_at": "2026-10-26T07:34:31.343817+00:00",
+  "elapsed_seconds": 332.343817,
+  "project_path": "/tmp/project-check-final-web.mOaj2X/app",
+  "skill_snapshot": "/tmp/project-check-final-web.mOaj2X/skill",
+  "skill_file_manifest": "/tmp/project-check-final-web.mOaj2X/skill-manifest.json",
+  "target_fix_files": {
+    "index_typescript.mjs": "937ab05a6d82614ada5a3b2d3606ec136bdbb7140599b99db477ec629a8d950f",
+    "source_index.py": "87643b131a9158ce0310fe1771547ac6c80381041717e2581ef17b3826f49d99"
+  },
+  "accessor_regression_passed": true,
+  "raw_index_unchanged_after_two_merges": true,
+  "raw_index_before_after_bytes_identical": true,
+  "getter": {
+    "symbol": "ValueBox.value [get]",
+    "id": "symbol:9434e636e7655a767dd4",
+    "parameters": [],
+    "line": 3
+  },
+  "setter": {
+    "symbol": "ValueBox.value [set]",
+    "id": "symbol:4f9934d88b99073ba31a",
+    "parameters": [
+      "next"
+    ],
+    "line": 4
+  },
+  "cli_persisted_index_matches_raw": true,
+  "cli_model_has_independent_accessors": true,
+  "current_affected_descriptions_reviewed": [
+    "Model.removeAll",
+    "Store.drop",
+    "Store.save"
+  ],
+  "requirements_inventory_unchanged": true,
+  "tests_source_unchanged": true,
+  "test_source_sha256": "7de4b7ab5b61038951787749bb802633c05fc07d8c247de9c570a3071e66a8c1",
+  "product_sources_unchanged": true,
+  "old_evidence_files_preserved": 275,
+  "delivery": {
+    "native_passed": 6,
+    "native_failed": 0,
+    "runtime_errors": 0,
+    "checks": 48,
+    "flaky": 0,
+    "seal_outcome": "PASSED",
+    "source_fingerprint": "f135f7b7e33c20077c30a37b6065012a49baf6572066a455b3745ab858552e15",
+    "verified_manifest_rows": 66,
+    "summary_stale_ui_claim_removed": true,
+    "summary_current_affected_meaning_present": true,
+    "summary_explicit_boundaries_present": true,
+    "detail_status": "passed",
+    "evidence_valid": true,
+    "summary_lines": 43,
+    "service_cleaned_up": true
+  },
+  "user_interventions": 0,
+  "user_questions": 0,
+  "cli_failures": 0,
+  "main_repository_modified": false,
+  "summary_path": "/tmp/project-check-final-web.mOaj2X/app/.project-check/runs/20261026T073107Z-59588432/SUMMARY.md",
+  "report_path": "/tmp/project-check-final-web.mOaj2X/app/.project-check/runs/20261026T073107Z-59588432/REPORT.md",
+  "detail_page": "/tmp/project-check-final-web.mOaj2X/app/.project-check/views/project.html"
+}

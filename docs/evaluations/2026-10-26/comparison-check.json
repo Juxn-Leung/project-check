@@ -1,0 +1,171 @@
+{
+  "browser": "155.0.8059.86",
+  "surfaces": [
+    {
+      "name": "desktop",
+      "layout": {
+        "viewport": {
+          "width": 1280,
+          "height": 800
+        },
+        "documentWidth": 1280,
+        "bodyWidth": 1280,
+        "scrollY": 0,
+        "mainScrollTop": 0,
+        "figure": {
+          "top": 386.953125,
+          "bottom": 695.34375,
+          "left": 150,
+          "right": 1130,
+          "width": 980,
+          "scrollWidth": 980
+        },
+        "verdictBottom": 308.5625,
+        "goalTop": 753.9375,
+        "steps": [
+          {
+            "text": "1打开自己文章的编辑页",
+            "top": 488.34375,
+            "bottom": 537.34375,
+            "left": 170,
+            "right": 606
+          },
+          {
+            "text": "2输入201个字符的标题，并修改正文",
+            "top": 537.34375,
+            "bottom": 586.34375,
+            "left": 170,
+            "right": 606
+          },
+          {
+            "text": "3点击保存，旧校验只检查标题非空",
+            "top": 586.34375,
+            "bottom": 635.34375,
+            "left": 170,
+            "right": 606
+          },
+          {
+            "text": "4超长标题与新正文写入数据库，返回列表",
+            "top": 635.34375,
+            "bottom": 677.34375,
+            "left": 170,
+            "right": 606
+          },
+          {
+            "text": "1打开同一篇文章的编辑页",
+            "top": 488.34375,
+            "bottom": 537.34375,
+            "left": 674,
+            "right": 1110
+          },
+          {
+            "text": "2输入同样的201个字符标题，并修改正文",
+            "top": 537.34375,
+            "bottom": 586.34375,
+            "left": 674,
+            "right": 1110
+          },
+          {
+            "text": "3点击保存，显示标题过长错误并停留编辑页",
+            "top": 586.34375,
+            "bottom": 635.34375,
+            "left": 674,
+            "right": 1110
+          },
+          {
+            "text": "4数据库中的原标题和原正文均未改变",
+            "top": 635.34375,
+            "bottom": 677.34375,
+            "left": 674,
+            "right": 1110
+          }
+        ]
+      },
+      "screenshot": "comparison-desktop-1280x800.png",
+      "page_errors": []
+    },
+    {
+      "name": "mobile",
+      "layout": {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "scrollY": 0,
+        "mainScrollTop": 0,
+        "figure": {
+          "top": 418.234375,
+          "bottom": 998.421875,
+          "left": 16,
+          "right": 374,
+          "width": 358,
+          "scrollWidth": 358
+        },
+        "verdictBottom": 339.84375,
+        "goalTop": 1078.609375,
+        "steps": [
+          {
+            "text": "1打开自己文章的编辑页",
+            "top": 515.828125,
+            "bottom": 564.828125,
+            "left": 32,
+            "right": 358
+          },
+          {
+            "text": "2输入201个字符的标题，并修改正文",
+            "top": 564.828125,
+            "bottom": 613.828125,
+            "left": 32,
+            "right": 358
+          },
+          {
+            "text": "3点击保存，旧校验只检查标题非空",
+            "top": 613.828125,
+            "bottom": 662.828125,
+            "left": 32,
+            "right": 358
+          },
+          {
+            "text": "4超长标题与新正文写入数据库，返回列表",
+            "top": 662.828125,
+            "bottom": 704.828125,
+            "left": 32,
+            "right": 358
+          },
+          {
+            "text": "1打开同一篇文章的编辑页",
+            "top": 793.421875,
+            "bottom": 842.421875,
+            "left": 32,
+            "right": 358
+          },
+          {
+            "text": "2输入同样的201个字符标题，并修改正文",
+            "top": 842.421875,
+            "bottom": 891.421875,
+            "left": 32,
+            "right": 358
+          },
+          {
+            "text": "3点击保存，显示标题过长错误并停留编辑页",
+            "top": 891.421875,
+            "bottom": 940.421875,
+            "left": 32,
+            "right": 358
+          },
+          {
+            "text": "4数据库中的原标题和原正文均未改变",
+            "top": 940.421875,
+            "bottom": 982.421875,
+            "left": 32,
+            "right": 358
+          }
+        ]
+      },
+      "screenshot": "comparison-mobile-top.png",
+      "page_errors": []
+    }
+  ]
+}

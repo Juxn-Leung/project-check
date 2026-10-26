@@ -1,0 +1,49 @@
+{
+  "run_dir": "/tmp/project-check-executor-eval.DyLhlf/fault-complex/.project-check/runs/candidate3-service-descendant",
+  "outcome": "PASSED",
+  "seal_exists": true,
+  "leader_pid": 85932,
+  "leader_alive_after_execute": false,
+  "descendant_pid": 85933,
+  "descendant_alive_after_execute": false,
+  "execution_state": {
+    "version": 1,
+    "scope": "task:hello-shout",
+    "phase": "complete",
+    "started_at": "2026-10-26T07:21:44.467569+00:00",
+    "runners": {
+      "cli": {
+        "phase": "finished",
+        "receipt": "commands/cli.json",
+        "imported": {
+          "native_report": "native/cli.xml",
+          "observations": "observations/cli.json",
+          "evidence_manifest": "evidence/cli.json",
+          "cases": 8,
+          "test_ids": [
+            "tests.test_cli::test_hello_default",
+            "tests.test_cli::test_hello_shout",
+            "tests.test_cli::test_hello_help",
+            "tests.test_cli::test_hello_unknown_option",
+            "tests.test_cli::test_top_help",
+            "tests.test_cli::test_init_home",
+            "tests.test_cli::test_status[normal]",
+            "tests.test_cli::test_status[verbose]"
+          ],
+          "issues": 0
+        }
+      }
+    },
+    "commands": {},
+    "finished_at": "2026-10-26T07:21:46.157375+00:00"
+  },
+  "finished_at": "2026-10-26T07:21:46.853167+00:00",
+  "manual_cleanup_required": false,
+  "summary_plan_difference_section": true,
+  "summary_unknown_boundary_present": true,
+  "summary_plan_difference_heading": "与原计划的差异",
+  "started_at": "2026-10-26T07:21:29+00:00",
+  "executor_sha256": "5119ad357da0996d02497c6bbce8ee71b66ce7dd809b304c0556b23bca1a5570",
+  "prior_failure_evidence": "/tmp/project-check-candidate-recheck.fQ89Qx/service-leak-probe.json",
+  "scope": "Only original SIGTERM-resistant descendant service probe rerun; no normal-chain repetition."
+}

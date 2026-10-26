@@ -1,0 +1,157 @@
+Isolated browser integration evidence: /private/var/folders/27/x9z83zz94gg487yqzz6f7q7m0000gn/T/project-check-browser-b44wBu
+/private/var/folders/27/x9z83zz94gg487yqzz6f7q7m0000gn/T/project-check-browser-b44wBu/run
+
+Running 9 tests using 1 worker
+
+(node:89782) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/9] [chromium] › tests/browser/acceptance.spec.ts:4:1 › happy-save-reload
+[2/9] [chromium] › tests/browser/acceptance.spec.ts:15:1 › navigation-only-fake-click
+[3/9] [chromium] › tests/browser/acceptance.spec.ts:22:1 › known-product-failure
+[4/9] [chromium] › tests/browser/acceptance.spec.ts:28:1 › empty-assert-wrapper
+[5/9] [chromium] › tests/browser/acceptance.spec.ts:34:1 › readback-before-reload
+[6/9] [chromium] › tests/browser/acceptance.spec.ts:43:3 › runtime-console
+  1) [chromium] › tests/browser/acceptance.spec.ts:43:3 › runtime-console ──────────────────────────
+
+    Error: Unexpected browser events: outside phase: unexpected console  DEMO_CONSOLE_ERROR
+
+       at ../../assets/playwright/phase-errors.ts:47
+
+      45 |       body: JSON.stringify(log), contentType: 'application/json',
+      46 |     });
+    > 47 |     if (log.unexpected.length) throw new Error(`Unexpected browser events: ${log.unexpected.join('; ')}`);
+         |                                      ^
+      48 |   }, { auto: true }],
+      49 | });
+      50 |
+        at Object.base.extend.phase.auto (/private/var/folders/27/x9z83zz94gg487yqzz6f7q7m0000gn/T/project-check-browser-b44wBu/project/assets/playwright/phase-errors.ts:47:38)
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../artifacts/acceptance-runtime-console-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../artifacts/acceptance-runtime-console-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../artifacts/acceptance-runtime-console-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../artifacts/acceptance-runtime-console-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+(node:89932) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[7/9] [chromium] › tests/browser/acceptance.spec.ts:43:3 › runtime-pageerror
+  2) [chromium] › tests/browser/acceptance.spec.ts:43:3 › runtime-pageerror ────────────────────────
+
+    Error: Unexpected browser events: outside phase: unexpected pageerror  DEMO_PAGE_ERROR
+
+       at ../../assets/playwright/phase-errors.ts:47
+
+      45 |       body: JSON.stringify(log), contentType: 'application/json',
+      46 |     });
+    > 47 |     if (log.unexpected.length) throw new Error(`Unexpected browser events: ${log.unexpected.join('; ')}`);
+         |                                      ^
+      48 |   }, { auto: true }],
+      49 | });
+      50 |
+        at Object.base.extend.phase.auto (/private/var/folders/27/x9z83zz94gg487yqzz6f7q7m0000gn/T/project-check-browser-b44wBu/project/assets/playwright/phase-errors.ts:47:38)
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../artifacts/acceptance-runtime-pageerror-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../artifacts/acceptance-runtime-pageerror-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../artifacts/acceptance-runtime-pageerror-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../artifacts/acceptance-runtime-pageerror-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+(node:89965) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[8/9] [chromium] › tests/browser/acceptance.spec.ts:43:3 › runtime-network
+  3) [chromium] › tests/browser/acceptance.spec.ts:43:3 › runtime-network ──────────────────────────
+
+    Error: Unexpected browser events: outside phase: unexpected response GET http://127.0.0.1:58100/api/error 500; outside phase: unexpected console  Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+
+       at ../../assets/playwright/phase-errors.ts:47
+
+      45 |       body: JSON.stringify(log), contentType: 'application/json',
+      46 |     });
+    > 47 |     if (log.unexpected.length) throw new Error(`Unexpected browser events: ${log.unexpected.join('; ')}`);
+         |                                      ^
+      48 |   }, { auto: true }],
+      49 | });
+      50 |
+        at Object.base.extend.phase.auto (/private/var/folders/27/x9z83zz94gg487yqzz6f7q7m0000gn/T/project-check-browser-b44wBu/project/assets/playwright/phase-errors.ts:47:38)
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../artifacts/acceptance-runtime-network-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../artifacts/acceptance-runtime-network-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../artifacts/acceptance-runtime-network-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../artifacts/acceptance-runtime-network-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+(node:90004) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[9/9] [chromium] › tests/browser/acceptance.spec.ts:43:3 › runtime-requestfailed
+  4) [chromium] › tests/browser/acceptance.spec.ts:43:3 › runtime-requestfailed ────────────────────
+
+    Error: Unexpected browser events: outside phase: unexpected requestfailed GET http://127.0.0.1:58100/api/disconnect net::ERR_EMPTY_RESPONSE; outside phase: unexpected console  Failed to load resource: net::ERR_EMPTY_RESPONSE
+
+       at ../../assets/playwright/phase-errors.ts:47
+
+      45 |       body: JSON.stringify(log), contentType: 'application/json',
+      46 |     });
+    > 47 |     if (log.unexpected.length) throw new Error(`Unexpected browser events: ${log.unexpected.join('; ')}`);
+         |                                      ^
+      48 |   }, { auto: true }],
+      49 | });
+      50 |
+        at Object.base.extend.phase.auto (/private/var/folders/27/x9z83zz94gg487yqzz6f7q7m0000gn/T/project-check-browser-b44wBu/project/assets/playwright/phase-errors.ts:47:38)
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../artifacts/acceptance-runtime-requestfailed-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../artifacts/acceptance-runtime-requestfailed-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../artifacts/acceptance-runtime-requestfailed-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../artifacts/acceptance-runtime-requestfailed-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+  4 failed
+    [chromium] › tests/browser/acceptance.spec.ts:43:3 › runtime-console ───────────────────────────
+    [chromium] › tests/browser/acceptance.spec.ts:43:3 › runtime-pageerror ─────────────────────────
+    [chromium] › tests/browser/acceptance.spec.ts:43:3 › runtime-network ───────────────────────────
+    [chromium] › tests/browser/acceptance.spec.ts:43:3 › runtime-requestfailed ─────────────────────
+  5 passed (7.6s)
+Browser integration: 9 expected acceptance outcomes verified. Evidence: /private/var/folders/27/x9z83zz94gg487yqzz6f7q7m0000gn/T/project-check-browser-b44wBu

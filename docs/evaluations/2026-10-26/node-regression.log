@@ -1,0 +1,39 @@
+npm warn Unknown user config "home". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> project-check-skill@0.4.0 test
+> node --test tests/*.test.js
+
+✔ project installation includes usable Skill resources without business configuration (131.376541ms)
+✔ user installation targets the supplied home, not the project (45.110584ms)
+✔ installed Skill can index a project through its packaged Python and parser resources (491.513333ms)
+✔ dry run creates no files (5.066417ms)
+✔ existing installation and local modifications are preserved (34.794917ms)
+✔ installation includes model tools and records resource identities (52.282125ms)
+✔ managed upgrade is idempotent and refuses local edits (60.753125ms)
+✔ legacy upgrade requires adoption and preserves backup outside discovery directory (101.423208ms)
+✔ dangling destination symlink is not replaced (37.389875ms)
+✔ simultaneous installs have exactly one winner and clean temporary state (31.304708ms)
+✔ ambiguous or missing scope is rejected (1.031833ms)
+✔ CLI reports version and rejects invalid options (170.009459ms)
+✔ CLI starts through an npm-style executable symlink (35.15625ms)
+✔ logout phase distinguishes 204, 401 and canceled requests (2.078291ms)
+✔ same 401 in another phase and unrelated cancellation fail (0.190292ms)
+✔ missing required 204 and wrong status fail (0.087ms)
+✔ broad network rules and nested phases are rejected (0.181167ms)
+✔ stable version choices reset lower components correctly (1.2435ms)
+✔ retries skip only a byte-identical published package (0.212667ms)
+✔ only registry 404 means absent; authentication and network failures stop release (0.723125ms)
+✔ registry verification waits for the published version and its integrity (0.135958ms)
+✔ registry verification rejects different contents without waiting (0.11375ms)
+✔ registry verification reports a version still unavailable after all attempts (0.090292ms)
+✔ successful release sync pushes version and tag atomically and can be verified again (792.104ms)
+✔ concurrent master changes are preserved; release never force pushes (528.044291ms)
+✔ conflicting release tags are never replaced (499.223458ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 26
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1905.111875

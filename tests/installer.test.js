@@ -37,6 +37,23 @@ test('user installation targets the supplied home, not the project', async t => 
   assert.equal(result.destination, join(root, '.agents', 'skills', 'project-check'));
 });
 
+test('installed Skill can index a project through its packaged Python and parser resources', async t => {
+  const root = await temporary(t);
+  const installed = await installSkill({ project: root });
+  await writeFile(join(root, 'app.py'), 'def answer():\n    return 42\n');
+  const script = join(installed.destination, 'scripts/project_check.py');
+  for (const command of ['init', 'index']) {
+    const result = spawnSync('python3', [script, command, '--root', root, ...(command === 'index' ? ['--path', 'app.py'] : [])], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+  }
+  const model = JSON.parse(await readFile(join(root, '.project-check/model.json'), 'utf8'));
+  assert.equal(model.nodes.length, 1);
+  assert.equal(model.nodes[0].symbol, 'answer');
+  for (const path of ['scripts/execution.py', 'scripts/index_typescript.mjs', 'references/execution.md']) {
+    assert.ok((await readFile(join(installed.destination, path))).length);
+  }
+});
+
 test('dry run creates no files', async t => {
   const root = await temporary(t);
   const result = await installSkill({ project: root, dryRun: true });

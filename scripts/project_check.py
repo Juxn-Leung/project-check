@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate Project Check inventories and summarize observed test evidence.
 
-This tool does not start services or tests. finish may execute the configured OpenSpec CLI under saved policy.
+execute runs configured services/tests. finish may execute the configured OpenSpec CLI under saved policy.
 """
 import argparse
 from collections import Counter
@@ -174,6 +174,8 @@ def validate_project(project, inventory):
         for command in project[field]:
             require(isinstance(command, dict) and nonempty(command.get("cwd")), f"{field}: missing cwd")
             strings(command.get("argv"), field + ": argv", False)
+            deps = strings(command.get("requires_services", []), field + ": requires_services")
+            require(set(deps) <= services.keys(), field + ": unknown service dependency")
     for key, runner in runners.items():
         for field in ("cwd", "selection", "native_report"):
             require(nonempty(runner.get(field)), f"{key}: missing {field}")
@@ -321,6 +323,28 @@ def source_current(source, observed):
                 observed.get("matches") is True and
                 (source["kind"] != "file" or observed.get("actual_sha256") == source["sha256"]) and
                 (source["kind"] != "external" or observed.get("revision") == source["revision"]))
+
+
+def snapshot(root, run_dir, inventory, extra=None):
+    """Freeze inputs before execution. Shared by the manual and managed workflows."""
+    from workspace_state import capture
+    config = root / ".project-check"
+    workspace = capture(root)
+    run_dir.mkdir(parents=True, exist_ok=False)
+    values = {"workspace.json": workspace,
+              "source-review.json": {"version": 1, "sources": source_review(inventory, root)}}
+    values.update(extra or {})
+    for name, value in values.items():
+        require(Path(name).name == name, "Snapshot input must be a simple filename")
+        (run_dir / name).write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    for name in ("inventory.json", "project.json"):
+        shutil.copyfile(config / name, run_dir / name)
+    names = ["inventory.json", "project.json", *values]
+    artifacts = [{"path": name, "sha256": sha256(run_dir / name), "size": (run_dir / name).stat().st_size}
+                 for name in names]
+    (run_dir / "snapshot-manifest.json").write_text(
+        json.dumps({"version": 1, "artifacts": artifacts}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return workspace
 
 
 def requirement_gaps(inventory, chosen, review, *, requirement_ids=None, scenario_ids=None, full_modules=None):
@@ -655,36 +679,54 @@ def render_checklist(inventory):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("init", "validate", "checklist", "select", "snapshot", "adapt", "report",
-                                           "map", "baseline", "review", "seal", "finish", "freshness", "preflight"))
+                                           "map", "baseline", "review", "seal", "finish", "freshness", "preflight", "execute", "index"))
     parser.add_argument("--root", required=True, type=Path)
     scope_args = parser.add_mutually_exclusive_group()
-    scope_args.add_argument("--module", help="Module ID or unique display name (select/preflight/report/seal)")
-    scope_args.add_argument("--task", help="Task ID matching the change-id (select/preflight/report/seal)")
+    scope_args.add_argument("--module", help="Module ID or unique display name (select/preflight/report/seal/execute)")
+    scope_args.add_argument("--task", help="Task ID matching the change-id (select/preflight/report/seal/execute)")
     parser.add_argument("--inventory", type=Path, help="Frozen inventory snapshot (report only)")
     parser.add_argument("--results", type=Path, help="Observed results JSON (report only)")
     parser.add_argument("--out", type=Path, help="New report file; existing files are not overwritten")
-    parser.add_argument("--run-dir", type=Path, help="Run directory (snapshot/adapt/map/review/seal/finish/freshness)")
+    parser.add_argument("--run-dir", type=Path, help="Run directory (snapshot/adapt/map/review/seal/finish/freshness/execute)")
     parser.add_argument("--change-id", help="Stable change ID (baseline/review/finish)")
-    parser.add_argument("--notes", type=Path, help="Agent explanations JSON (review)")
+    parser.add_argument("--notes", type=Path, help="Agent explanations JSON (review/execute)")
     parser.add_argument("--execute", action="store_true", help="Archive after validation under saved policy (finish)")
     parser.add_argument("--framework", choices=("pytest-junit", "playwright-json"), help="Native report format (adapt)")
     parser.add_argument("--native", type=Path, help="Native report file (adapt)")
     parser.add_argument("--artifact-root", type=Path, help="Allowed attachment directory (adapt)")
     parser.add_argument("--runner", help="Runner ID (adapt)")
+    parser.add_argument("--resume", action="store_true", help="Resume an existing managed execution without repeating completed commands")
+    parser.add_argument("--assessment", type=Path, help="Source-bound review of assertions and dependency modes (execute)")
+    parser.add_argument("--typescript-root", type=Path, help="Existing TypeScript runtime/project directory (index)")
+    parser.add_argument("--path", action="append", dest="source_paths", help="Source file/directory to index; repeat to limit task scope")
+    parser.add_argument("--include-tests", action="store_true", help="Include test code in syntax index")
     args = parser.parse_args(argv)
     try:
         require(args.root.is_dir(), "Project root does not exist")
-        require(not args.module or args.command in {"select", "report", "seal", "preflight"}, "--module is only valid for select/report/seal/preflight")
-        require(not args.task or args.command in {"select", "report", "seal", "preflight"}, "--task is only valid for select/report/seal/preflight")
+        require(not args.module or args.command in {"select", "report", "seal", "preflight", "execute"}, "--module is only valid for select/report/seal/preflight/execute")
+        require(not args.task or args.command in {"select", "report", "seal", "preflight", "execute"}, "--task is only valid for select/report/seal/preflight/execute")
         require(not (args.inventory or args.results or args.out) or args.command == "report", "--inventory/--results/--out are report-only")
-        require(not args.run_dir or args.command in {"snapshot", "adapt", "map", "review", "seal", "finish", "freshness"},
+        require(not args.run_dir or args.command in {"snapshot", "adapt", "map", "review", "seal", "finish", "freshness", "execute"},
                 "--run-dir is not supported by this command")
         require(not args.change_id or args.command in {"baseline", "review", "finish"}, "--change-id is baseline/review/finish-only")
-        require(not args.notes or args.command == "review", "--notes is review-only")
+        require(not args.notes or args.command in {"review", "execute"}, "--notes is review/execute-only")
+        require(not (args.resume or args.assessment) or args.command == "execute", "--resume/--assessment are execute-only")
+        require(not (args.typescript_root or args.source_paths or args.include_tests) or args.command == "index",
+                "--typescript-root/--path/--include-tests are index-only")
         require(not args.execute or args.command == "finish", "--execute is finish-only")
         require(not (args.framework or args.native or args.artifact_root or args.runner) or args.command == "adapt",
                 "adapter options are adapt-only")
         config = args.root / ".project-check"
+        if args.command == "index":
+            from source_index import update_index
+            print(json.dumps(update_index(args.root, args.typescript_root, args.source_paths, args.include_tests), ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "execute":
+            from execution import execute
+            result = execute(args.root, args.run_dir, module=args.module, task=args.task,
+                             assessment=args.assessment, resume=args.resume, notes=args.notes)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0 if result["outcome"] == "PASSED" else 1
         if args.command in {"map", "baseline", "review"}:
             from project_model import handle
             result = handle(args.command, args.root, change_id=args.change_id, run_dir=args.run_dir, notes=args.notes)
@@ -745,21 +787,7 @@ def main(argv=None):
             print(json.dumps({"scope": scope, "selected_ids": [x["id"] for x in items]}, ensure_ascii=False, indent=2))
         elif args.command == "snapshot":
             require(args.run_dir is not None, "snapshot requires --run-dir")
-            from workspace_state import capture
-            workspace = capture(args.root)
-            args.run_dir.mkdir(parents=True, exist_ok=False)
-            (args.run_dir / "workspace.json").write_text(json.dumps(workspace, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-            shutil.copyfile(config / "inventory.json", args.run_dir / "inventory.json")
-            shutil.copyfile(config / "project.json", args.run_dir / "project.json")
-            with (args.run_dir / "source-review.json").open("x", encoding="utf-8") as file:
-                json.dump({"version": 1, "sources": source_review(inventory, args.root)}, file, ensure_ascii=False, indent=2)
-                file.write("\n")
-            snapshot_artifacts = [{"path": name, "sha256": sha256(args.run_dir / name),
-                                   "size": (args.run_dir / name).stat().st_size}
-                                  for name in ("inventory.json", "project.json", "source-review.json", "workspace.json")]
-            with (args.run_dir / "snapshot-manifest.json").open("x", encoding="utf-8") as file:
-                json.dump({"version": 1, "artifacts": snapshot_artifacts}, file, ensure_ascii=False, indent=2)
-                file.write("\n")
+            snapshot(args.root, args.run_dir, inventory)
             print(args.run_dir)
         elif args.command == "adapt":
             require(all((args.run_dir, args.framework, args.native, args.artifact_root, args.runner)),

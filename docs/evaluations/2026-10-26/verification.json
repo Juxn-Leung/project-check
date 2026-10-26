@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-26",
+  "base_commit": "470a2c48550faca8906628eac604290ee9442686",
+  "working_tree": "unpublished changes on 0.4.0",
+  "regressions": [
+    {
+      "suite": "python",
+      "observation": "Ran 190 tests",
+      "log": "python-regression.log",
+      "sha256": "587a85d8090f23203085f94ce0b91566845e2104c81d40f737542b26c33f5774",
+      "outcome": "PASSED"
+    },
+    {
+      "suite": "node",
+      "observation": "pass 26",
+      "log": "node-regression.log",
+      "sha256": "9e15a17c482cd8b30c934b55e9e1b68a0a041b4f3b9fd8462121dc09ebe9bb73",
+      "outcome": "PASSED"
+    },
+    {
+      "suite": "map",
+      "observation": "10 interaction regressions passed",
+      "log": "map-regression.log",
+      "sha256": "92421dbbefe9b9df0022941509eecec5ad81c6dd0c1e2989262ecbc547356816",
+      "outcome": "PASSED"
+    },
+    {
+      "suite": "reporter",
+      "observation": "5 contracts verified",
+      "log": "reporter-regression.log",
+      "sha256": "b261fa20935a85b72e31d86b7cb8dd9e2beab16beda1cf7519b7688c4a92ecd4",
+      "outcome": "PASSED"
+    },
+    {
+      "suite": "browser",
+      "observation": "9 expected acceptance outcomes verified",
+      "log": "browser-regression.log",
+      "sha256": "6286ef4ce62736ec3519dfac527d1797d6c06aba457ab27200301e63bb9cbb4b",
+      "outcome": "PASSED"
+    }
+  ],
+  "typescript_integration": {
+    "outcome": "PASSED",
+    "runtime": "TypeScript 5.9.3",
+    "observed": "Python CLI + TypeScript AST integration passed: declarations, constructor, ranges, calls, shadowing and stable merge."
+  },
+  "skill_quick_validation": "Skill is valid!",
+  "package_smoke": "package-smoke.json",
+  "installed_payload_matches_current_sources": true,
+  "source_sha256": {
+    "SKILL.md": "a83619e4fa3e82dfabf1d927aba4ed1e1d1e400727221fe19e4058e43868f740",
+    "agents/openai.yaml": "0627fe1a494d8d25dfb1f461219f89ea277cac21e589ac9921a0f13b75ce2b48",
+    "scripts/execution.py": "de250c147aa474492ed3f2086b538226ca48555f4892a68755f32a28f1466575",
+    "scripts/completion.py": "46ecfcb9018586557903232ae159e8fd0fbe28e8be6d8cc453f28752bd3c3956",
+    "scripts/workspace_state.py": "c6d96c2cee5fd05e8b48c689f6f9c7e4bb3dbbaf64098e990b42a4776873945a",
+    "scripts/project_model.py": "b30996e3cfed9d849d3bc35faaebe97e4387563a41b65b6d6b10ca3953411392",
+    "scripts/acceptance.py": "72d7e060bc79c1f4450ef4b9f2147e08f3b6729845b2617aaab6c49d13bf6d0e",
+    "scripts/report_adapters.py": "aa4e23e7cf7113dc46f81d3b6d26551ace4f9a685ba52e61a2f4bdcc877531d4",
+    "scripts/source_index.py": "87643b131a9158ce0310fe1771547ac6c80381041717e2581ef17b3826f49d99",
+    "scripts/project_check.py": "7d8d7d2d8453ba819c03574bcba12b53789bc3c53649b6dc4615c481d9ea5dd0",
+    "scripts/index_typescript.mjs": "937ab05a6d82614ada5a3b2d3606ec136bdbb7140599b99db477ec629a8d950f",
+    "references/contracts.md": "5eb14addaf5483377fe35e9d3ab0205e07fe6fa835d7619eb27bb7361631dd6e",
+    "references/browser.md": "cb0d912cfac72fa82a470cdd0f32d6a267db5804134214d7b9db32f6f653895e",
+    "references/map.md": "88cd510bc7bcbd75e2b0ca57d2aa5a1f78e50db0a6eae4e3856c9ade62991f51",
+    "references/execution.md": "80678a9cc3908f4fec6a5f40763d0c6e1d317f8dd53bef39c89b31ad91566060",
+    "references/build.md": "bf4c9f88d90ac79bd1e5b3f3b5740ba81d38cc5e38cd0f9414a904f4815b6536",
+    "references/run.md": "ef56bfb1c6a7c2ac56a13c05f4b76e2faca6207a571a1a1b8d9b106a6ac8fb7a",
+    "references/openspec.md": "c4e4ad81b5dd5e007795309af7050716094b4591302c8d7f42206a817689780c",
+    "assets/project-map.html": "92f5ae89b8c61d9f926c75ec5a7bf233f542487da1d12b8c14b4435c5a84db8c",
+    "assets/inventory.template.json": "d7b3502f0aee9144e73a7ef0bb4a658e71123358eb64db3a03f0d69d25c59c8c",
+    "assets/model.template.json": "91d5a80b6ebb4be7a2f2406eddd6a613c91e18682c43d18dff220f778e35487d",
+    "assets/project.template.json": "46560f7877120a68388e44b2d41d49653eddb136ccf17ae5d5a86fcf4982d674",
+    "assets/playwright/phase-errors.ts": "ce9482e651e720d964ad837fd9e44906060b2fb75aca3f61a469a1a06d53c079",
+    "assets/playwright/project-check-reporter.ts": "905793b9020b6f40f8742886e6bbe55a30017ff0d27abdc9b5c30c0224de54f1",
+    "assets/playwright/phase-rule-engine.d.mts": "4182fee90765c21141fc85bb80738dd5259849ce5f093051ccd9318379d2e154",
+    "assets/playwright/phase-rule-engine.mjs": "261f9e89763ec2e0ccceb76073f0480fe15b357457e729b11aba96e6f5eef13c"
+  },
+  "human_feedback": {
+    "text_only_summary": "需要配合前后对比图才够直观",
+    "comparison_implemented": true,
+    "final_diagram_readability_confirmed_by_user": false
+  }
+}

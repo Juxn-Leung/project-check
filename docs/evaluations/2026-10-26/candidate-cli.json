@@ -1,0 +1,36 @@
+{
+  "started_at": "2026-10-26T07:14:40+00:00",
+  "finished_at": "2026-10-26T07:18:41.138496+00:00",
+  "executor_sha256": "4a9202b476a90d4c23e4cb5f9c43b95ce7e34016810f6147f855d4e151ae1da3",
+  "candidate_path": "/tmp/project-check-candidate-recheck.fQ89Qx/skill",
+  "normal_project": "/tmp/project-check-executor-eval.DyLhlf/complex",
+  "fault_project": "/tmp/project-check-executor-eval.DyLhlf/fault-complex",
+  "normal_run": "/tmp/project-check-executor-eval.DyLhlf/complex/.project-check/runs/candidate2-normal",
+  "service_run": "/tmp/project-check-executor-eval.DyLhlf/fault-complex/.project-check/runs/candidate2-service-descendant",
+  "normal_execute_outcome": "PASSED",
+  "native_tests": 8,
+  "scenarios": 7,
+  "resume_reexecuted_tests": false,
+  "corrupt_evidence_resume_exit_code": 2,
+  "corrupt_evidence_message": "Frozen execution evidence changed: 证据缺失或哈希不符：native/cli.xml",
+  "summary_three_answers_sufficient": true,
+  "service_lifecycle_outcome": "BUG_REPRODUCED: PASSED and sealed while owned descendant remains running",
+  "service_probe": {
+    "outcome": "PASSED",
+    "seal_exists": true,
+    "leader_pid": 84072,
+    "leader_alive_after_execute": false,
+    "descendant_pid": 84073,
+    "descendant_alive_after_execute": true,
+    "descendant_alive_after_manual_cleanup": false
+  },
+  "logged_process_commands": 4,
+  "user_interventions": 0,
+  "main_repository_modified": false,
+  "static_review": {
+    "startup": "Dependency order, required identity command, actual HTTP readiness, bounded polling and identity checked in Services.ensure.",
+    "cleanup": "finally closes services in reverse startup order. Confirmed bug: stop waits only for leader; a SIGTERM-resistant descendant survives if leader exits promptly.",
+    "resume": "Source/snapshot/evidence are checked before reusing complete receipts; complete normal run does not rerun. Unknown command receipt rejects repeats.",
+    "unverified": "Hard-kill during service startup has only in-memory service PID tracking; not reproduced in this round. Windows, SIGKILL/SIGTERM and full data lifecycle matrices remain outside verified scope."
+  }
+}

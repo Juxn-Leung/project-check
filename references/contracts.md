@@ -1,6 +1,6 @@
 # 数据约定与工具
 
-辅助脚本依赖 Python 3.9+ 标准库，不会启动服务或测试。`project.json` 保持版本 1，记录项目实际命令和依赖；示例见 `assets/project.template.json`。`inventory.json` 新建时用版本 2；旧版 1 可读取，但报告一律 `INCOMPLETE`，直到完成需求审阅和证据迁移。
+辅助脚本依赖 Python 3.9+ 标准库。`execute` 可以启动已配置的服务和测试，配置与恢复方式见 [统一执行](execution.md)；其他校验和报告命令不启动测试。`project.json` 保持版本 1，记录项目实际命令和依赖；示例见 `assets/project.template.json`。`inventory.json` 新建时用版本 2；旧版 1 可读取，但报告一律 `INCOMPLETE`，直到完成需求审阅和证据迁移。
 
 ## inventory.json v2
 

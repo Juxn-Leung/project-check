@@ -181,15 +181,59 @@ test('task-evidence-link-and-unverified-range', async ({ page, context }) => {
   await expect(page.locator('.task-content')).toContainText('frozen-source-fingerprint');
 });
 
+test('task-behavior-diagram-shows-user-outcomes-before-code-on-desktop-and-mobile', async ({ page }, testInfo) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await taskPage(page);
+  const current = await page.evaluate(() => JSON.parse(document.getElementById('project-data')!.textContent!));
+  current.task.notes = [{ target_type: 'feature', target: 'orders', kind: 'behavior', text: '提交前校验',
+    comparison: { title: '填写无效订单并点击保存', before: ['点击保存', '无效订单仍会写入'],
+      after: ['点击保存', '显示输入错误', '保留填写内容，不写入订单'] } }];
+  const template = await readFile(resolve('assets/project-map.html'), 'utf8');
+  await page.setContent(template.replace('__PROJECT_CHECK_DATA__', JSON.stringify(current)));
+  await expect(page.getByRole('heading', { name: '一眼看懂：修改前 / 修改后' })).toBeVisible();
+  await expect(page.getByRole('list', { name: '填写无效订单并点击保存 · 修改前' })).toContainText('无效订单仍会写入');
+  await expect(page.getByRole('list', { name: '填写无效订单并点击保存 · 修改后' })).toContainText('保留填写内容，不写入订单');
+  await expect(page.locator('.task-change')).not.toBeVisible();
+  const [before, after] = await page.locator('.behavior-lane').evaluateAll(nodes => nodes.map(n => {
+    const box = n.getBoundingClientRect(); return { x: box.x, y: box.y, bottom: box.bottom };
+  }));
+  expect(after.x).toBeGreaterThan(before.x);
+  expect(after.y).toBe(before.y);
+  await page.screenshot({ path: testInfo.outputPath('behavior-comparison-desktop.png'), fullPage: true });
+  await page.locator('.task-method-details summary').click();
+  await expect(page.locator('.task-change')).toBeVisible();
+  await page.getByRole('button', { name: '查看方法与代码对比' }).click();
+  await expect(page.locator('#detail')).toContainText('原来做什么');
+  await page.getByRole('tab', { name: '本次任务', exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobile = await page.locator('.behavior-lane').evaluateAll(nodes => nodes.map(n => {
+    const box = n.getBoundingClientRect(); return { x: box.x, y: box.y, bottom: box.bottom };
+  }));
+  expect(mobile[1].y).toBeGreaterThanOrEqual(mobile[0].bottom);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('behavior-comparison-mobile.png'), fullPage: true });
+  expect(errors).toEqual([]);
+});
+
 test('task-pending-and-failed-states-preserve-raw-result', async ({ page }) => {
   await taskPage(page);
   const current = await page.evaluate(() => JSON.parse(document.getElementById('project-data')!.textContent!));
+  current.task.changes.push({ id: 'unmapped-helper', name: '未复核 helper', status: 'unresolved',
+    reasons: ['缺少基线源码，不能确认变化'], notes: [], rationale: [] });
+  current.task.notes = [{ kind: 'unknown', text: '未验证 Firefox' }, { kind: 'deviation', text: '已解决下载阻塞' }];
   current.task.status = 'pending';
   current.task.gaps = ['源码已经变化，需要重新验收'];
   current.acceptance.state = 'stale';
   current.acceptance.results[0].historical_status = 'passed';
   const template = await readFile(resolve('assets/project-map.html'), 'utf8');
   await page.setContent(template.replace('__PROJECT_CHECK_DATA__', JSON.stringify(current)));
+  await expect(page.locator('.task-change')).not.toContainText('未复核 helper');
+  await page.locator('.task-unresolved summary').click();
+  await expect(page.locator('.task-unresolved')).toContainText('未计作已确认修改');
+  await expect(page.locator('.task-unresolved')).toContainText('缺少基线源码');
+  await expect(page.locator('.task-content')).toContainText('未验证 Firefox');
+  await expect(page.getByText('查看与原计划的差异', { exact: true })).toBeVisible();
   await expect(page.locator('.task-verdict')).toContainText('待验收');
   await expect(page.locator('.scenario-heading')).toContainText('待验收');
   await expect(page.locator('.task-content')).toContainText('需要重新验收');

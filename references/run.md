@@ -1,5 +1,7 @@
 # 执行与证据
 
+已有项目命令可按 [统一执行与恢复](execution.md) 使用 `execute` 自动完成以下步骤。需要自定义运行器或特殊环境时继续使用本页的手动编排；两种方式共用相同证据校验。填写测试映射时使用 `adapt` 输出的 `test_ids`，不要根据文件位置猜测原生 ID。
+
 ## 选择并冻结范围
 
 先校验配置和清单：`python3 <skill-dir>/scripts/project_check.py validate --root <project>`。

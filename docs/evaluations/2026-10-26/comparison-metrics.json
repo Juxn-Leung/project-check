@@ -1,0 +1,23 @@
+{
+  "checked_at_utc": "2026-10-26T07:42:37.090555+00:00",
+  "only_template_changed": true,
+  "page": "/private/tmp/project-check-flask-summary-fix.AQeRio/tutorial/.project-check/views/title-max-200-comparison.html",
+  "desktop_screenshot": "/private/tmp/project-check-flask-summary-fix.AQeRio/comparison-desktop-1280x800.png",
+  "mobile_screenshot": "/private/tmp/project-check-flask-summary-fix.AQeRio/comparison-mobile-top.png",
+  "desktop_viewport": "1280x800",
+  "all4_steps_each_side_visible_on_initial_view": true,
+  "initial_scrollY": 0,
+  "initial_mainScrollTop": 0,
+  "desktop_figure_top": 386.953125,
+  "desktop_figure_bottom": 695.34375,
+  "last_step_bottom": 677.34375,
+  "mobile_viewport_width": 390,
+  "mobile_document_width": 390,
+  "mobile_figure_width": 358,
+  "mobile_figure_scroll_width": 358,
+  "page_errors": [],
+  "protected_original_inputs_evidence_unchanged": 49,
+  "original_acceptance": "current/PASSED",
+  "source_fingerprint": "160b09e35ec7552617867ce30c1bfaef338b0f10ee99de00d19ffe9274168ebd",
+  "new_business_tests_run": false
+}

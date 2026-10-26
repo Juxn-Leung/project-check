@@ -1,0 +1,98 @@
+{
+  "task": "Flask tutorial title max 200",
+  "started_at_utc": "2026-10-26T06:40:03+00:00",
+  "finished_at_utc": "2026-10-26T06:57:35.520906+00:00",
+  "elapsed_seconds": 1052.5,
+  "skill_commit": "470a2c4",
+  "skill_path": "/tmp/project-check-skill-v040.olqiIm",
+  "upstream_commit": "d086db856be187255b8ec61ef409357393020f32",
+  "project_path": "/private/tmp/project-check-flask-eval.VNdtZP/tutorial",
+  "user_interventions": 0,
+  "permission_requests": 0,
+  "supervisor_version_steering": 1,
+  "recorded_commands": 73,
+  "product_change": "flaskr/blog.py: create/update each add elif len(title)>200 and explicit flash error; four lines total",
+  "requirements": 2,
+  "scenarios": 5,
+  "final_native_tests": 42,
+  "final_pytest": {
+    "passed": 40,
+    "failed": 0,
+    "skipped": 0
+  },
+  "final_browser": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "retry_count": 0,
+    "browser": "Google Chrome 155.0.8059.86",
+    "playwright": "1.64.1",
+    "checks_per_case": [
+      14,
+      20
+    ],
+    "unexpected_errors": [
+      [],
+      []
+    ]
+  },
+  "runs": [
+    {
+      "id": "red",
+      "pytest_passed": 24,
+      "pytest_failed": 16,
+      "cause": "10 wrong expected HTTP302; 6 genuine title limit defects"
+    },
+    {
+      "id": "red-corrected",
+      "pytest_passed": 34,
+      "pytest_failed": 6,
+      "cause": "genuine missing title validation"
+    },
+    {
+      "id": "green",
+      "pytest_passed": 40,
+      "browser_passed": 0,
+      "browser_failed": 2,
+      "cause": "upstream favicon 404 console error, business checks all completed"
+    },
+    {
+      "id": "green-2",
+      "pytest_passed": 40,
+      "browser_passed": 1,
+      "browser_failed": 1,
+      "cause": "test incorrectly required optional favicon error; Chrome cached missing icon"
+    },
+    {
+      "id": "green-3",
+      "pytest_passed": 40,
+      "browser_passed": 2,
+      "browser_failed": 0,
+      "cause": ""
+    }
+  ],
+  "baseline_complete": true,
+  "explanation_complete": true,
+  "native_evidence_complete": true,
+  "detail_page_complete": true,
+  "detail_page_qa": "task page renders without JS errors; evidence expand shows frozen files; method code tab shows real before/after diff",
+  "source_revision": "48de43957e6486596a4d4c14de634ee539352764",
+  "source_fingerprint": "653ec050acf8cf96aba1ea848c5be44623eddcef40d4f5933fface51eb2223c9",
+  "final_outcome": "PASSED",
+  "freshness": "current",
+  "sealed": true,
+  "baseline": "/private/tmp/project-check-flask-eval.VNdtZP/tutorial/.project-check/changes/title-max-200/baseline.json",
+  "review": "/private/tmp/project-check-flask-eval.VNdtZP/tutorial/.project-check/changes/title-max-200/review.json",
+  "report": "/private/tmp/project-check-flask-eval.VNdtZP/tutorial/.project-check/runs/green-3/REPORT.md",
+  "detail_page": "/private/tmp/project-check-flask-eval.VNdtZP/tutorial/.project-check/views/project.html",
+  "known_limits": [
+    "Only task scope and existing regression suite; no full project semantic map",
+    "Unicode code point count, not grapheme cluster count",
+    "Chrome only; optional known favicon error scoped to initial navigation",
+    "Two mapped source files/four model nodes; schema file-level node unresolved; ten added/changed setup/test metadata files explicitly unmapped"
+  ],
+  "environment_blockers_resolved": [
+    "Playwright Chrome download stalled at0% for182s; terminated owned process with kill -TERM72433 and used installed Chrome with isolated browser profile"
+  ],
+  "owned_processes_cleaned": true
+}

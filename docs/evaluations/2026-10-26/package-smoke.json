@@ -1,0 +1,25 @@
+{
+  "name": "project-check-skill",
+  "version": "0.4.0",
+  "file_count": 29,
+  "integrity": "sha512-uOieDZcraMV3A0J9K2MyGYQb2/W9tYNw5kh8jZ68GhJvCz5AuKWxHSxhiCkBTLsMr3FchHpranbNg+372CP2Lw==",
+  "tarball": "/var/folders/27/x9z83zz94gg487yqzz6f7q7m0000gn/T/project-check-delivery-package-n3xudnmb/project-check-skill-0.4.0.tgz",
+  "installed_skill": "/var/folders/27/x9z83zz94gg487yqzz6f7q7m0000gn/T/project-check-delivery-package-n3xudnmb/installed-project/.agents/skills/project-check",
+  "installed_commands": [
+    "--help",
+    "init",
+    "index",
+    "execute",
+    "execute --resume"
+  ],
+  "real_cli_scenarios": {
+    "blocked": 0,
+    "failed": 0,
+    "passed": 7,
+    "skipped": 0
+  },
+  "real_cli_run": "/tmp/project-check-executor-eval.DyLhlf/complex/.project-check/runs/packaged-delivery",
+  "resume_hash_mtime_unchanged": 22,
+  "outcome": "PASSED",
+  "published": false
+}

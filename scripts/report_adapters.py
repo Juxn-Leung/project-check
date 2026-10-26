@@ -224,4 +224,5 @@ def adapt_report(framework, native, artifact_root, run_dir, runner):
     record(run_dir / obs_rel, obs_rel)
     _write(run_dir / manifest_rel, _json_bytes({"version": 1, "runner": runner, "artifacts": artifacts}))
     return {"native_report": native_rel, "observations": obs_rel, "evidence_manifest": manifest_rel,
-            "cases": len(normalized), "issues": sum(len(row["issues"]) for row in normalized)}
+            "cases": len(normalized), "test_ids": [row["id"] for row in normalized],
+            "issues": sum(len(row["issues"]) for row in normalized)}

@@ -1,0 +1,51 @@
+{
+  "started_at_utc": "2026-10-26T07:15:02+00:00",
+  "finished_at_utc": "2026-10-26T07:19:54.094826+00:00",
+  "elapsed_seconds": 292.1,
+  "skill_candidate_snapshot": "/private/tmp/project-check-flask-summary-fix.AQeRio/skill",
+  "version_manifest": "/private/tmp/project-check-flask-summary-fix.AQeRio/SKILL-VERSION.json",
+  "project": "/private/tmp/project-check-flask-summary-fix.AQeRio/tutorial",
+  "run_dir": "/private/tmp/project-check-flask-summary-fix.AQeRio/tutorial/.project-check/runs/20261026T071556Z-f18cac51",
+  "user_interventions": 0,
+  "product_source_unchanged": true,
+  "previous_evaluation_unchanged": true,
+  "existing_manual_node_descriptions_and_sources_preserved": 4,
+  "index_path": "flaskr",
+  "index_extracted_python_nodes": 18,
+  "model_total_nodes": 19,
+  "model_test_nodes": 0,
+  "index_unresolved_calls": 87,
+  "index_parse_errors": [],
+  "index_unsupported_files_in_selected_path": [],
+  "execute_outcome": "PASSED",
+  "execute_seconds": 13.682,
+  "native_cases": {
+    "unit": {
+      "passed": 40
+    },
+    "browser": {
+      "passed": 2
+    }
+  },
+  "automatic_seal": "PASSED",
+  "source_fingerprint": "d151b2231357acda83c9e7cbb8ee388a13ce1507884ba6453f9f0218a9b050f1",
+  "freshness": "current",
+  "resume_repeated_commands": false,
+  "resume_receipt_log_raw_frozen_files_hash_mtime_size_identical": 23,
+  "summary_characters": 1353,
+  "summary_change_bullets": 2,
+  "previous_summary_change_bullets": 43,
+  "previous_summary_characters": 3428,
+  "detail_task_change_headings": [
+    "create已修改",
+    "update已修改"
+  ],
+  "detail_pageerror_count": 0,
+  "actual_execution_failures": [],
+  "evaluator_check_correction": "Finalizer initially expected post unchanged; actual affected is correct downstream impact without schema edits. Corrected evaluator assumption; runner results unchanged.",
+  "summary_evaluation": "前两问可具体回答；第三问能列映射缺口，仍混合已解决历史与尚未验证",
+  "human_readability_validated": false,
+  "owned_test_database_cleaned": true,
+  "owned_service_stopped": true,
+  "recorded_commands_before_finalize_receipt": 12
+}

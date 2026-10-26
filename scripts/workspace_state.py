@@ -26,7 +26,7 @@ def git(root, *args):
 
 def excluded(name):
     parts = Path(name).parts
-    return (name == '.project-check/CHECKLIST.md' or any(part in GENERATED for part in parts) or name.endswith(('.pyc', '.pyo')) or
+    return (name in {'.project-check/CHECKLIST.md', '.project-check/source-index.json'} or any(part in GENERATED for part in parts) or name.endswith(('.pyc', '.pyo')) or
             (len(parts) > 1 and parts[0] == '.project-check' and parts[1] in PC_OUTPUTS))
 
 
@@ -59,7 +59,7 @@ def capture(root):
     files = {}
     for name in sorted(names):
         parts = Path(name).parts
-        if name == '.project-check/CHECKLIST.md' or (len(parts) > 1 and parts[0] == '.project-check' and parts[1] in PC_OUTPUTS) or (name not in tracked and excluded(name)):
+        if name in {'.project-check/CHECKLIST.md', '.project-check/source-index.json'} or (len(parts) > 1 and parts[0] == '.project-check' and parts[1] in PC_OUTPUTS) or (name not in tracked and excluded(name)):
             continue
         if Path(name).is_absolute() or '..' in parts:
             raise ValueError(f'Source path escapes project root: {name}')

@@ -1,0 +1,36 @@
+{
+  "started_at_utc": "2026-10-26T07:21:55+00:00",
+  "finished_at_utc": "2026-10-26T07:24:52.886557+00:00",
+  "elapsed_seconds": 177.9,
+  "skill_snapshot": "/private/tmp/project-check-flask-summary-fix.AQeRio/skill-boundaries",
+  "skill_version_manifest": "/private/tmp/project-check-flask-summary-fix.AQeRio/SKILL-BOUNDARIES-VERSION.json",
+  "run_dir": "/private/tmp/project-check-flask-summary-fix.AQeRio/tutorial/.project-check/runs/20261026T072304Z-10603376",
+  "native_cases": {
+    "unit": {
+      "passed": 40
+    },
+    "browser": {
+      "passed": 2
+    }
+  },
+  "execute_outcome": "PASSED",
+  "automatic_seal": "PASSED",
+  "source_fingerprint": "160b09e35ec7552617867ce30c1bfaef338b0f10ee99de00d19ffe9274168ebd",
+  "execute_seconds": 13.134,
+  "freshness": "current",
+  "unknown_notes_added": 3,
+  "source_changes_from_previous_run": [
+    ".project-check/model.json"
+  ],
+  "notes_change": "three unknown boundaries plus reviewed method metadata; no requirement, product or test edits",
+  "previous_report_and_run_hashes_unchanged": 44,
+  "tests_and_requirements_unchanged": true,
+  "actual_failures": [],
+  "summary_third_question": "Can now answer concrete unverified boundaries solely from SUMMARY; resolved deviations separated; unmapped files explicitly analysis/explanation gaps, not unexecuted tests.",
+  "human_readability_validated": false,
+  "user_interventions": 0,
+  "owned_database_removed": [
+    "/var/folders/27/x9z83zz94gg487yqzz6f7q7m0000gn/T/flaskr-browser-db-vk05pnvf"
+  ],
+  "owned_service_stopped": true
+}

@@ -158,6 +158,17 @@ class MapTests(unittest.TestCase):
         result = pm.validate_notes({'notes': [{'target_type': 'feature', 'target': 'order-save', 'kind': 'learning',
                                               'text': '解释事务。', 'verified': True, 'provenance': 'observed'}]}, [self.model])
         self.assertFalse(result[0]['verified'])
+
+    def test_behavior_diagram_requires_explicit_before_after_and_stays_unverified(self):
+        note = {'target_type': 'feature', 'target': 'order-save', 'kind': 'behavior', 'text': '先校验再保存',
+                'comparison': {'title': '提交无效订单', 'before': ['点击保存', '无效内容写入'],
+                               'after': ['点击保存', '提示错误', '保留输入，不写入']}}
+        result = pm.validate_notes({'notes': [note]}, [self.model])
+        self.assertFalse(result[0]['verified'])
+        self.assertEqual(result[0]['comparison']['after'][-1], '保留输入，不写入')
+        note['comparison']['before'] = []
+        with self.assertRaisesRegex(ValueError, 'before/after'):
+            pm.validate_notes({'notes': [note]}, [self.model])
         self.assertEqual(result[0]['provenance'], 'agent-authored')
 
     def test_omitted_required_scenario_prevents_feature_pass(self):

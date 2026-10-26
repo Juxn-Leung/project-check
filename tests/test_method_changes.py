@@ -136,6 +136,22 @@ class MethodChangeTests(unittest.TestCase):
         self.assertTrue(rows['second']['metadata_changed'])
         self.assertIsNone(rows['second']['after'])
 
+    def test_new_index_of_unchanged_unmapped_file_is_not_a_product_change(self):
+        (self.root / 'helpers.py').write_text('def helper():\n    return 1\n')
+        before = self.baseline()
+        self.model['nodes'].append({'id': 'helper', 'kind': 'function', 'name': 'helper',
+            'description': '尚未复核', 'provenance': 'observed', 'sources': [self.source('helpers.py', 1, 2)]})
+        rows, _ = self.review(before)
+        self.assertEqual(rows['helper']['status'], 'unchanged')
+
+    def test_unchanged_file_reference_is_affected_instead_of_unresolved(self):
+        self.model['nodes'][-1]['sources'][0].pop('line')
+        self.model['nodes'][-1]['sources'][0].pop('end_line')
+        before = self.baseline()
+        self.refresh(BEFORE.replace('first result', 'new result'))
+        rows, _ = self.review(before)
+        self.assertEqual(rows['data']['status'], 'affected')
+
     def test_description_change_is_separate_from_actual_source_change(self):
         before = self.baseline()
         self.model['nodes'][0]['description'] = '更准确的方法用途'

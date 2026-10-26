@@ -1,0 +1,73 @@
+{
+  "notes": [
+    {
+      "target_type": "feature",
+      "target": "article-save",
+      "kind": "behavior",
+      "text": "原来非空标题没有长度上限；现在创建和编辑都只接受最多200字符，超长输入给出明确错误，且数据库完全不写入。200个中文或单码点emoji可正常保存。"
+    },
+    {
+      "target_type": "node",
+      "target": "create",
+      "kind": "rationale",
+      "text": "用户要求标题最多200字符；在INSERT之前增加服务端长度校验，浏览器或直接POST均无法绕过，沿用既有flash错误渲染。"
+    },
+    {
+      "target_type": "node",
+      "target": "update",
+      "kind": "rationale",
+      "text": "编辑也必须遵守同一限制；在UPDATE之前拒绝超长标题，保留原有标题与正文，且继续先由get_post检查文章与作者权限。"
+    },
+    {
+      "target_type": "feature",
+      "target": "article-save",
+      "kind": "learning",
+      "text": "Python len按Unicode码点计数，不按UTF-8字节；组合字符或复合emoji可能包含多个码点。本次没有改变空白标题的既有处理规则，也没有改变表结构。"
+    },
+    {
+      "target_type": "feature",
+      "target": "article-save",
+      "kind": "deviation",
+      "text": "原本新增测试误设HTTP302；读取固定Flask上游源码确认默认303，已纠正为303并保留首轮失败。Playwright浏览器下载长时间停在0%，有界终止后使用本机Chrome独立临时配置。"
+    },
+    {
+      "target_type": "feature",
+      "target": "article-save",
+      "kind": "unknown",
+      "text": "浏览器与界面边界：本轮真实交互仅使用桌面Chrome、1280×800视口；未执行Firefox、WebKit或移动端视口流程。"
+    },
+    {
+      "target_type": "feature",
+      "target": "article-save",
+      "kind": "unknown",
+      "text": "标题字符边界：断言覆盖ASCII、中文及单码点emoji；未执行组合音标和ZWJ复合emoji的边界用例。计数口径仍沿用已登记需求的Unicode码点，没有新增按视觉字形计数的要求。"
+    },
+    {
+      "target_type": "feature",
+      "target": "article-save",
+      "kind": "unknown",
+      "text": "环境与CLI边界：本轮持久化在本地Flask和隔离SQLite中验证；未做生产部署验收。既有init-db命令测试用monkeypatch核对分发，未把该用例视为真实CLI初始化数据库的端到端验证。"
+    },
+    {
+      "target_type": "feature",
+      "target": "article-save",
+      "kind": "behavior",
+      "text": "对比修改前后提交201字符标题的编辑行为。基线只拒绝空标题，当前写入前拒绝超长输入；原有真实断言已核对错误提示与数据库原标题正文保留。图示是讲解，不产生新的验收通过结论。",
+      "comparison": {
+        "title": "编辑文章：提交201个字符的标题",
+        "before": [
+          "打开自己文章的编辑页",
+          "输入201个字符的标题，并修改正文",
+          "点击保存，旧校验只检查标题非空",
+          "超长标题与新正文写入数据库，返回列表"
+        ],
+        "after": [
+          "打开同一篇文章的编辑页",
+          "输入同样的201个字符标题，并修改正文",
+          "点击保存，显示标题过长错误并停留编辑页",
+          "数据库中的原标题和原正文均未改变"
+        ]
+      }
+    }
+  ]
+}
